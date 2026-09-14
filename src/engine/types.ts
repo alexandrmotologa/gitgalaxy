@@ -57,6 +57,7 @@ export interface FileNode {
   commitCount: number;
   lastModifiedCommitHash?: string;
   topAuthor?: string;
+  authors?: string[];
   extension: string;
 }
 

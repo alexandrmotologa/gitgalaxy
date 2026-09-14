@@ -42,6 +42,9 @@ export function FileNodesMesh({
   useEffect(() => {
     if (!meshRef.current) return;
 
+    const q = searchQuery.toLowerCase().trim();
+    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
+
     fileArray.forEach((file, idx) => {
       const [x, y, z] = file.position;
       let s = file.size;
@@ -51,13 +54,28 @@ export function FileNodesMesh({
         s *= 1.4;
       }
 
+      if (isAnyFilterActive) {
+        const matchesSearch = !q || file.path.toLowerCase().includes(q);
+        const matchesAuthor =
+          !authorFilter ||
+          (file.authors ? file.authors.includes(authorFilter) : file.topAuthor === authorFilter);
+        const matchesExt = !extensionFilter || file.extension === extensionFilter;
+        const isMatch = matchesSearch && matchesAuthor && matchesExt;
+
+        if (isMatch) {
+          s *= 1.6; // Enlarge matching nodes prominently
+        } else {
+          s *= 0.15; // Shrink non-matching nodes into tiny background motes
+        }
+      }
+
       tempMatrix.makeTranslation(x, y, z);
       tempMatrix.scale(new THREE.Vector3(s, s, s));
       meshRef.current!.setMatrixAt(idx, tempMatrix);
     });
 
     meshRef.current.instanceMatrix.needsUpdate = true;
-  }, [fileArray, isHotspotMode]);
+  }, [fileArray, isHotspotMode, authorFilter, extensionFilter, searchQuery]);
 
   // Real-time frame loop updating colors
   useFrame((state) => {
@@ -66,12 +84,16 @@ export function FileNodesMesh({
     let needsColorUpdate = false;
     const time = state.clock.elapsedTime;
     const q = searchQuery.toLowerCase().trim();
+    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
 
     fileArray.forEach((file, idx) => {
       const isSelected = file.id === selectedFileId;
       const isSearchMatch = q.length > 0 && file.path.toLowerCase().includes(q);
-      const isAuthorMatch = !authorFilter || file.topAuthor === authorFilter;
+      const isAuthorMatch =
+        !authorFilter ||
+        (file.authors ? file.authors.includes(authorFilter) : file.topAuthor === authorFilter);
       const isExtMatch = !extensionFilter || file.extension === extensionFilter;
+      const isMatch = (!q || isSearchMatch) && isAuthorMatch && isExtMatch;
 
       let [r, g, b] = getHeatColorRgb(file.heat);
 
@@ -88,11 +110,19 @@ export function FileNodesMesh({
           g = Math.min(1, g * pulse);
           b = Math.min(1, b * pulse);
         }
-      } else if (!isAuthorMatch || !isExtMatch) {
-        // Dim filtered out nodes
-        r *= 0.18;
-        g *= 0.18;
-        b *= 0.18;
+      } else if (isAnyFilterActive) {
+        if (!isMatch) {
+          // Drastically dim filtered-out nodes
+          r = 0.04;
+          g = 0.05;
+          b = 0.08;
+        } else {
+          // Vibrate and intensify matching nodes
+          const pulse = 1 + Math.sin(time * 6 + idx) * 0.3;
+          r = Math.min(1, (r + 0.2) * pulse);
+          g = Math.min(1, (g + 0.2) * pulse);
+          b = Math.min(1, (b + 0.3) * pulse);
+        }
       } else if (isSearchMatch) {
         // Highlight search matches
         const pulse = 0.5 + Math.sin(time * 8) * 0.5;
@@ -141,6 +171,8 @@ export function FileNodesMesh({
   };
 
   const selectedNode = selectedFileId ? files.get(selectedFileId) : null;
+  const q = searchQuery.toLowerCase().trim();
+  const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
 
   return (
     <group>
@@ -155,7 +187,7 @@ export function FileNodesMesh({
           roughness={0.25}
           metalness={0.75}
           emissive="#00f0ff"
-          emissiveIntensity={isHotspotMode ? 0.6 : 0.35}
+          emissiveIntensity={isAnyFilterActive ? 0.08 : isHotspotMode ? 0.6 : 0.35}
         />
       </instancedMesh>
 
@@ -169,6 +201,32 @@ export function FileNodesMesh({
           <pointLight color="#ffffff" intensity={2.5} distance={20} />
         </group>
       )}
+
+      {/* Target beacon rings for matching filtered files */}
+      {isAnyFilterActive &&
+        fileArray
+          .filter((f) => {
+            const matchesSearch = !q || f.path.toLowerCase().includes(q);
+            const matchesAuthor =
+              !authorFilter ||
+              (f.authors ? f.authors.includes(authorFilter) : f.topAuthor === authorFilter);
+            const matchesExt = !extensionFilter || f.extension === extensionFilter;
+            return matchesSearch && matchesAuthor && matchesExt;
+          })
+          .slice(0, 35)
+          .map((f) => (
+            <group key={`filter-ring-${f.id}`} position={f.position}>
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[f.size * 1.7, f.size * 2.1, 32]} />
+                <meshBasicMaterial
+                  color="#38bdf8"
+                  side={THREE.DoubleSide}
+                  transparent
+                  opacity={0.9}
+                />
+              </mesh>
+            </group>
+          ))}
 
       {/* Pulsing danger corona rings for top hotspots when in Hotspot mode */}
       {isHotspotMode &&

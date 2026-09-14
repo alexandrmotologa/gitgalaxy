@@ -129,6 +129,47 @@ export function SearchBar3D({
         )}
       </div>
 
+      {/* Active Filter Badges */}
+      {(selectedAuthorFilter || selectedExtensionFilter) && (
+        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          {selectedAuthorFilter && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-cyan-950/90 border border-cyan-500/60 text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.3)] animate-fade-in">
+              <span>Author: {selectedAuthorFilter}</span>
+              <button
+                onClick={() => onAuthorFilterChange(null)}
+                className="hover:text-white ml-0.5 p-0.5 rounded hover:bg-cyan-900/60"
+                title="Remove author filter"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          )}
+
+          {selectedExtensionFilter && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-950/90 border border-purple-500/60 text-purple-300 shadow-[0_0_12px_rgba(168,85,247,0.3)] animate-fade-in">
+              <span>Type: .{selectedExtensionFilter}</span>
+              <button
+                onClick={() => onExtensionFilterChange(null)}
+                className="hover:text-white ml-0.5 p-0.5 rounded hover:bg-purple-900/60"
+                title="Remove extension filter"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              onAuthorFilterChange(null);
+              onExtensionFilterChange(null);
+            }}
+            className="text-[10px] font-mono text-gray-400 hover:text-rose-400 px-1 py-0.5 rounded transition-colors"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
       {/* Autocomplete Dropdown List */}
       {isOpen && matchingFiles.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-galaxy-900/95 backdrop-blur-xl border border-cyan-500/40 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fade-in">

@@ -17,6 +17,7 @@ import {
   Share2,
   Rocket,
   Sliders,
+  HelpCircle,
 } from 'lucide-react';
 import { soundFx } from '../engine/audioSynthesizer';
 import { SearchBar3D } from './SearchBar3D';
@@ -43,6 +44,7 @@ interface HUDOverlayProps {
   onTogglePilotMode?: () => void;
   onInspectCommit?: (commit: GitCommit) => void;
   onOpenUploader: () => void;
+  onOpenGuide?: () => void;
   onResetCamera: () => void;
 }
 
@@ -68,6 +70,7 @@ export function HUDOverlay({
   onTogglePilotMode,
   onInspectCommit,
   onOpenUploader,
+  onOpenGuide,
   onResetCamera,
 }: HUDOverlayProps) {
   const [isMuted, setIsMuted] = useState(true);
@@ -242,7 +245,7 @@ export function HUDOverlay({
                 ? 'text-cyan-300 bg-cyan-950/80 border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.6)] scale-105 animate-pulse'
                 : 'text-gray-400 hover:text-cyan-300 border-transparent hover:bg-gray-800'
             }`}
-            title={isPilotMode ? 'Exit Astral Pilot Flight Mode' : 'Enter 6-DOF Astral Flight Pilot Mode'}
+            title="Astral Pilot Mode: Fly manually through the codebase in 6-DOF cockpit mode (WASD + Space + Shift)"
           >
             <Rocket size={16} />
           </button>
@@ -255,7 +258,7 @@ export function HUDOverlay({
                 ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]'
                 : 'text-gray-500 hover:text-gray-300 border-transparent hover:bg-gray-800'
             }`}
-            title={isConstellationsVisible ? 'Hide Directory Constellations' : 'Show Directory Constellations'}
+            title="Code Constellations: Toggle celestial web lines between sibling files in directories"
           >
             <Share2 size={16} />
           </button>
@@ -268,7 +271,7 @@ export function HUDOverlay({
                 ? 'text-rose-400 bg-rose-950/60 border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)] scale-105'
                 : 'text-gray-400 hover:text-rose-400 border-transparent hover:bg-gray-800'
             }`}
-            title={isHotspotMode ? 'Disable Debt Radar' : 'Enable Architectural Debt Radar'}
+            title="Architectural Debt Radar: Dim stable code and isolate top volatile hotspots with leaderboard"
           >
             <Flame size={16} className={isHotspotMode ? 'animate-pulse' : ''} />
           </button>
@@ -281,7 +284,7 @@ export function HUDOverlay({
                 ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/60 shadow-[0_0_15px_rgba(0,240,255,0.4)] scale-105'
                 : 'text-gray-400 hover:text-cyan-400 border-transparent hover:bg-gray-800'
             }`}
-            title={isCinematicMode ? 'Disable Cinematic Camera' : 'Enable Cinematic Auto-Director'}
+            title="Cinematic Auto-Director: Hands-free dynamic camera smoothly tracking active commits"
           >
             <Video size={16} />
           </button>
@@ -290,7 +293,7 @@ export function HUDOverlay({
           <button
             onClick={onResetCamera}
             className="p-2 rounded-xl text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 transition-colors border border-transparent hover:border-cyan-500/30"
-            title="Recenter Camera to Galactic Core"
+            title="Recenter Camera: Return viewpoint to Galactic Core (Trunk)"
           >
             <RotateCcw size={16} />
           </button>
@@ -308,7 +311,7 @@ export function HUDOverlay({
                   ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
                   : 'text-gray-400 hover:text-gray-200 border-transparent hover:bg-gray-800'
               }`}
-              title={isMuted ? 'Unmute Space Audio (Right click for volume slider)' : 'Mute Audio (Right click for volume slider)'}
+              title="Audio Synthesizer: Master volume, ambient hum & procedural commit chimes (Click to mute, click sliders for volume)"
             >
               {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
@@ -317,7 +320,7 @@ export function HUDOverlay({
             <button
               onClick={() => setIsAudioMenuOpen(!isAudioMenuOpen)}
               className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-gray-800 text-gray-400 hover:text-cyan-300"
-              title="Audio Volume Slider"
+              title="Adjust Master Volume Slider"
             >
               <Sliders size={9} />
             </button>
@@ -347,15 +350,26 @@ export function HUDOverlay({
             onClick={captureScreenshot}
             disabled={isCapturing}
             className="p-2 rounded-xl text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 transition-colors border border-transparent hover:border-cyan-500/30"
-            title="Capture High-Res Screenshot"
+            title="4K Screenshot: Export clean high-resolution PNG snapshot of the 3D galaxy"
           >
             <Camera size={16} />
+          </button>
+
+          {/* Field Manual / Guide Button */}
+          <button
+            onClick={onOpenGuide}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold text-amber-300 bg-amber-950/70 hover:bg-amber-900/80 border border-amber-500/50 hover:border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.25)] transition-all"
+            title="Field Manual & Visual Legend: Learn what all 3D celestial elements and buttons do"
+          >
+            <HelpCircle size={14} />
+            <span>Guide</span>
           </button>
 
           {/* Import Modal Button */}
           <button
             onClick={onOpenUploader}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all"
+            title="Import Repository: Paste local git log or stream live from any public GitHub repository"
           >
             <Upload size={14} />
             <span>Import</span>

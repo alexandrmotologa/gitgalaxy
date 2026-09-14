@@ -18,11 +18,12 @@ export function useGalaxyState() {
   const [isHotspotMode, setIsHotspotMode] = useState(false);
   const [isCinematicMode, setIsCinematicMode] = useState(false);
 
-  // v3 feature states: Constellations, Pilot mode, Commit modal
+  // v3 feature states: Constellations, Pilot mode, Commit modal, Help guide
   const [isConstellationsVisible, setIsConstellationsVisible] = useState(true);
   const [isPilotMode, setIsPilotMode] = useState(false);
   const [inspectedCommit, setInspectedCommit] = useState<GitCommit | null>(null);
   const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Load sample dataset
   const loadSampleDemo = useCallback(async () => {
@@ -126,6 +127,56 @@ export function useGalaxyState() {
     setIsCommitModalOpen(false);
   }, []);
 
+  const toggleGuide = useCallback(() => {
+    setIsGuideOpen((prev) => !prev);
+  }, []);
+
+  const handleAuthorFilterChange = useCallback((author: string | null) => {
+    setSelectedAuthorFilter(author);
+    if (!repository) return;
+
+    if (author) {
+      // Find matching files and focus camera on cluster centroid
+      let cx = 0, cy = 0, cz = 0, count = 0;
+      repository.files.forEach((f) => {
+        const isMatch = f.authors ? f.authors.includes(author) : f.topAuthor === author;
+        if (isMatch) {
+          cx += f.position[0];
+          cy += f.position[1];
+          cz += f.position[2];
+          count++;
+        }
+      });
+      if (count > 0) {
+        setFocusTarget([cx / count, cy / count, cz / count]);
+      }
+    } else {
+      setFocusTarget([0, 0, 0]);
+    }
+  }, [repository]);
+
+  const handleExtensionFilterChange = useCallback((ext: string | null) => {
+    setSelectedExtensionFilter(ext);
+    if (!repository) return;
+
+    if (ext) {
+      let cx = 0, cy = 0, cz = 0, count = 0;
+      repository.files.forEach((f) => {
+        if (f.extension === ext) {
+          cx += f.position[0];
+          cy += f.position[1];
+          cz += f.position[2];
+          count++;
+        }
+      });
+      if (count > 0) {
+        setFocusTarget([cx / count, cy / count, cz / count]);
+      }
+    } else {
+      setFocusTarget([0, 0, 0]);
+    }
+  }, [repository]);
+
   const handleFilesUpdated = useCallback((updatedFiles: Map<string, FileNode>) => {
     setRepository((prev) => {
       if (!prev) return null;
@@ -174,24 +225,27 @@ export function useGalaxyState() {
     isCinematicMode,
     isConstellationsVisible,
     isPilotMode,
+    isGuideOpen,
     inspectedCommit,
     isCommitModalOpen,
     topHotspots,
     availableExtensions,
     branches,
     setIsUploaderOpen,
+    setIsGuideOpen,
     selectFile,
     closeFileDetails,
     setHoveredFileId,
     setFocusTarget,
     resetCamera,
     setSearchQuery,
-    setSelectedAuthorFilter,
-    setSelectedExtensionFilter,
+    setSelectedAuthorFilter: handleAuthorFilterChange,
+    setSelectedExtensionFilter: handleExtensionFilterChange,
     toggleHotspotMode,
     toggleCinematicMode,
     toggleConstellations,
     togglePilotMode,
+    toggleGuide,
     openCommitModal,
     closeCommitModal,
     loadCustomLog,

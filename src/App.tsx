@@ -10,6 +10,7 @@ import { GitUploaderModal } from './components/GitUploaderModal';
 import { HotspotLeaderboard } from './components/HotspotLeaderboard';
 import { CommitDetailModal } from './components/CommitDetailModal';
 import { CockpitHUD, FlightTelemetry } from './components/CockpitHUD';
+import { HelpGuideModal } from './components/HelpGuideModal';
 
 export function App() {
   const {
@@ -26,12 +27,14 @@ export function App() {
     isCinematicMode,
     isConstellationsVisible,
     isPilotMode,
+    isGuideOpen,
     inspectedCommit,
     isCommitModalOpen,
     topHotspots,
     availableExtensions,
     branches,
     setIsUploaderOpen,
+    setIsGuideOpen,
     selectFile,
     closeFileDetails,
     setHoveredFileId,
@@ -43,6 +46,7 @@ export function App() {
     toggleCinematicMode,
     toggleConstellations,
     togglePilotMode,
+    toggleGuide,
     openCommitModal,
     closeCommitModal,
     loadCustomLog,
@@ -135,6 +139,7 @@ export function App() {
         onTogglePilotMode={togglePilotMode}
         onInspectCommit={openCommitModal}
         onOpenUploader={() => setIsUploaderOpen(true)}
+        onOpenGuide={toggleGuide}
         onResetCamera={resetCamera}
       />
 
@@ -218,6 +223,12 @@ export function App() {
         onLoadLog={loadCustomLog}
         onLoadCommits={loadCommitsDirectly}
         onLoadSample={loadSampleDemo}
+      />
+
+      {/* Field Manual & Visual Guide Modal */}
+      <HelpGuideModal
+        isOpen={isGuideOpen}
+        onClose={() => setIsGuideOpen(false)}
       />
     </div>
   );

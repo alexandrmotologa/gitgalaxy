@@ -159,6 +159,7 @@ export function buildGalaxyLayout(commits: GitCommit[], repoName: string = 'Repo
         commitCount: stats.commitCount,
         lastModifiedCommitHash: stats.lastCommitHash,
         topAuthor,
+        authors: Array.from(stats.authors.keys()),
         extension,
       });
     });
