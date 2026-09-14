@@ -6,6 +6,7 @@ import { TimelineScrubber } from './components/TimelineScrubber';
 import { FileDetailDrawer } from './components/FileDetailDrawer';
 import { ChurnLegend } from './components/ChurnLegend';
 import { GitUploaderModal } from './components/GitUploaderModal';
+import { HotspotLeaderboard } from './components/HotspotLeaderboard';
 
 export function App() {
   const {
@@ -15,12 +16,25 @@ export function App() {
     hoveredFileId,
     focusTarget,
     isUploaderOpen,
+    searchQuery,
+    selectedAuthorFilter,
+    selectedExtensionFilter,
+    isHotspotMode,
+    isCinematicMode,
+    topHotspots,
+    availableExtensions,
     setIsUploaderOpen,
     selectFile,
     closeFileDetails,
     setHoveredFileId,
     resetCamera,
+    setSearchQuery,
+    setSelectedAuthorFilter,
+    setSelectedExtensionFilter,
+    toggleHotspotMode,
+    toggleCinematicMode,
     loadCustomLog,
+    loadCommitsDirectly,
     loadSampleDemo,
     handleFilesUpdated,
   } = useGalaxyState();
@@ -54,9 +68,14 @@ export function App() {
           repository={repository}
           selectedFileId={selectedFileId}
           focusTarget={focusTarget}
-          activeAuthorName={currentCommit?.author}
+          activeCommit={currentCommit}
           laserBeams={laserBeams}
           shockwaves={shockwaves}
+          isHotspotMode={isHotspotMode}
+          isCinematicMode={isCinematicMode}
+          authorFilter={selectedAuthorFilter}
+          extensionFilter={selectedExtensionFilter}
+          searchQuery={searchQuery}
           onSelectFile={selectFile}
           onHoverFile={(fileId) => setHoveredFileId(fileId)}
         />
@@ -71,8 +90,28 @@ export function App() {
         repository={repository}
         activeCommit={currentCommit}
         hoveredFile={hoveredFile}
+        searchQuery={searchQuery}
+        selectedAuthorFilter={selectedAuthorFilter}
+        selectedExtensionFilter={selectedExtensionFilter}
+        availableExtensions={availableExtensions}
+        isHotspotMode={isHotspotMode}
+        isCinematicMode={isCinematicMode}
+        onSearchChange={setSearchQuery}
+        onAuthorFilterChange={setSelectedAuthorFilter}
+        onExtensionFilterChange={setSelectedExtensionFilter}
+        onSelectFile={selectFile}
+        onToggleHotspotMode={toggleHotspotMode}
+        onToggleCinematicMode={toggleCinematicMode}
         onOpenUploader={() => setIsUploaderOpen(true)}
         onResetCamera={resetCamera}
+      />
+
+      {/* Architectural Debt Radar Leaderboard */}
+      <HotspotLeaderboard
+        isOpen={isHotspotMode}
+        hotspots={topHotspots}
+        onSelectFile={selectFile}
+        onClose={toggleHotspotMode}
       />
 
       {/* Bottom Controls Area */}
@@ -110,11 +149,12 @@ export function App() {
         onFocusNode={() => selectFile(selectedFileId!)}
       />
 
-      {/* Git Log Uploader Modal */}
+      {/* Git Log / GitHub URL Uploader Modal */}
       <GitUploaderModal
         isOpen={isUploaderOpen}
         onClose={() => setIsUploaderOpen(false)}
         onLoadLog={loadCustomLog}
+        onLoadCommits={loadCommitsDirectly}
         onLoadSample={loadSampleDemo}
       />
     </div>

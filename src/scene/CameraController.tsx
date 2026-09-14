@@ -6,13 +6,21 @@ import * as THREE from 'three';
 interface CameraControllerProps {
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
   focusTarget: [number, number, number] | null;
+  isCinematicMode?: boolean;
+  activeCommitTarget?: [number, number, number] | null;
 }
 
-export function CameraController({ controlsRef, focusTarget }: CameraControllerProps) {
+export function CameraController({
+  controlsRef,
+  focusTarget,
+  isCinematicMode = false,
+  activeCommitTarget,
+}: CameraControllerProps) {
   const { camera } = useThree();
   const targetVec = useRef(new THREE.Vector3(0, 0, 0));
   const isTransitioning = useRef(false);
 
+  // Manual target focus (e.g. click from Search or Leaderboard)
   useEffect(() => {
     if (focusTarget) {
       targetVec.current.set(...focusTarget);
@@ -20,22 +28,43 @@ export function CameraController({ controlsRef, focusTarget }: CameraControllerP
     }
   }, [focusTarget]);
 
+  // Cinematic tracking of active commit
+  useEffect(() => {
+    if (isCinematicMode && activeCommitTarget) {
+      targetVec.current.set(...activeCommitTarget);
+      isTransitioning.current = true;
+    }
+  }, [isCinematicMode, activeCommitTarget]);
+
   useFrame((_, delta) => {
-    if (!controlsRef.current || !isTransitioning.current) return;
+    if (!controlsRef.current) return;
 
-    // Smoothly lerp OrbitControls target to focused node
-    controlsRef.current.target.lerp(targetVec.current, delta * 3.5);
+    if (isTransitioning.current) {
+      // Smoothly lerp OrbitControls target to focused node
+      controlsRef.current.target.lerp(targetVec.current, delta * 3.5);
 
-    // Keep camera at comfortable observation distance
-    const desiredCamPos = new THREE.Vector3()
-      .copy(targetVec.current)
-      .add(new THREE.Vector3(12, 16, 24));
+      const offset = isCinematicMode
+        ? new THREE.Vector3(25, 20, 35)
+        : new THREE.Vector3(12, 16, 24);
 
-    camera.position.lerp(desiredCamPos, delta * 2.5);
-    controlsRef.current.update();
+      const desiredCamPos = new THREE.Vector3()
+        .copy(targetVec.current)
+        .add(offset);
 
-    if (controlsRef.current.target.distanceTo(targetVec.current) < 0.2) {
-      isTransitioning.current = false;
+      camera.position.lerp(desiredCamPos, delta * 2.2);
+      controlsRef.current.update();
+
+      if (controlsRef.current.target.distanceTo(targetVec.current) < 0.3) {
+        isTransitioning.current = false;
+      }
+    } else if (isCinematicMode) {
+      // Subtle continuous slow orbit around action
+      const orbitSpeed = 0.15;
+      controlsRef.current.autoRotate = true;
+      controlsRef.current.autoRotateSpeed = orbitSpeed;
+      controlsRef.current.update();
+    } else {
+      controlsRef.current.autoRotate = false;
     }
   });
 

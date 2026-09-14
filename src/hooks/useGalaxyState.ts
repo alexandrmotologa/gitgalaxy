@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RepositoryData, FileNode } from '../engine/types';
 import { parseGitLog } from '../engine/gitLogParser';
 import { buildGalaxyLayout } from '../engine/galaxyLayout';
@@ -10,6 +10,13 @@ export function useGalaxyState() {
   const [hoveredFileId, setHoveredFileId] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<[number, number, number] | null>(null);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+
+  // New v2 states: Filters, Hotspot radar, and Cinematic camera
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
+  const [selectedExtensionFilter, setSelectedExtensionFilter] = useState<string | null>(null);
+  const [isHotspotMode, setIsHotspotMode] = useState(false);
+  const [isCinematicMode, setIsCinematicMode] = useState(false);
 
   // Load sample dataset
   const loadSampleDemo = useCallback(async () => {
@@ -52,6 +59,21 @@ export function useGalaxyState() {
     }
   }, []);
 
+  const loadCommitsDirectly = useCallback((commits: RepositoryData['commits'], repoName: string) => {
+    setIsLoading(true);
+    try {
+      const data = buildGalaxyLayout(commits, repoName);
+      setRepository(data);
+      setSelectedFileId(null);
+      setFocusTarget([0, 0, 0]);
+      setIsUploaderOpen(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to initialize galaxy from commits.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const selectFile = useCallback(
     (fileId: string) => {
       setSelectedFileId(fileId);
@@ -73,6 +95,14 @@ export function useGalaxyState() {
     setFocusTarget([0, 0, 0]);
   }, []);
 
+  const toggleHotspotMode = useCallback(() => {
+    setIsHotspotMode((prev) => !prev);
+  }, []);
+
+  const toggleCinematicMode = useCallback(() => {
+    setIsCinematicMode((prev) => !prev);
+  }, []);
+
   const handleFilesUpdated = useCallback((updatedFiles: Map<string, FileNode>) => {
     setRepository((prev) => {
       if (!prev) return null;
@@ -83,6 +113,24 @@ export function useGalaxyState() {
     });
   }, []);
 
+  // Top 5 highest churn hotspots for the leaderboard
+  const topHotspots = useMemo(() => {
+    if (!repository) return [];
+    return Array.from(repository.files.values())
+      .sort((a, b) => b.heat - a.heat || (b.additions + b.deletions) - (a.additions + a.deletions))
+      .slice(0, 5);
+  }, [repository]);
+
+  // Unique file extensions in repository
+  const availableExtensions = useMemo(() => {
+    if (!repository) return [];
+    const set = new Set<string>();
+    repository.files.forEach((f) => {
+      if (f.extension) set.add(f.extension);
+    });
+    return Array.from(set).sort();
+  }, [repository]);
+
   return {
     repository,
     isLoading,
@@ -90,12 +138,26 @@ export function useGalaxyState() {
     hoveredFileId,
     focusTarget,
     isUploaderOpen,
+    searchQuery,
+    selectedAuthorFilter,
+    selectedExtensionFilter,
+    isHotspotMode,
+    isCinematicMode,
+    topHotspots,
+    availableExtensions,
     setIsUploaderOpen,
     selectFile,
     closeFileDetails,
     setHoveredFileId,
+    setFocusTarget,
     resetCamera,
+    setSearchQuery,
+    setSelectedAuthorFilter,
+    setSelectedExtensionFilter,
+    toggleHotspotMode,
+    toggleCinematicMode,
     loadCustomLog,
+    loadCommitsDirectly,
     loadSampleDemo,
     handleFilesUpdated,
   };

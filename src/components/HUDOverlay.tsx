@@ -1,12 +1,39 @@
 import { useState } from 'react';
 import { GitCommit, RepositoryData, FileNode } from '../engine/types';
-import { Volume2, VolumeX, Upload, RotateCcw, GitCommit as GitCommitIcon, Folder, Users, FileCode, Check, Copy } from 'lucide-react';
+import {
+  Volume2,
+  VolumeX,
+  Upload,
+  RotateCcw,
+  GitCommit as GitCommitIcon,
+  Folder,
+  Users,
+  FileCode,
+  Check,
+  Copy,
+  Flame,
+  Video,
+  Camera,
+} from 'lucide-react';
 import { soundFx } from '../engine/audioSynthesizer';
+import { SearchBar3D } from './SearchBar3D';
 
 interface HUDOverlayProps {
   repository: RepositoryData | null;
   activeCommit?: GitCommit;
   hoveredFile?: FileNode | null;
+  searchQuery: string;
+  selectedAuthorFilter: string | null;
+  selectedExtensionFilter: string | null;
+  availableExtensions: string[];
+  isHotspotMode: boolean;
+  isCinematicMode: boolean;
+  onSearchChange: (query: string) => void;
+  onAuthorFilterChange: (author: string | null) => void;
+  onExtensionFilterChange: (ext: string | null) => void;
+  onSelectFile: (fileId: string) => void;
+  onToggleHotspotMode: () => void;
+  onToggleCinematicMode: () => void;
   onOpenUploader: () => void;
   onResetCamera: () => void;
 }
@@ -15,11 +42,24 @@ export function HUDOverlay({
   repository,
   activeCommit,
   hoveredFile,
+  searchQuery,
+  selectedAuthorFilter,
+  selectedExtensionFilter,
+  availableExtensions,
+  isHotspotMode,
+  isCinematicMode,
+  onSearchChange,
+  onAuthorFilterChange,
+  onExtensionFilterChange,
+  onSelectFile,
+  onToggleHotspotMode,
+  onToggleCinematicMode,
   onOpenUploader,
   onResetCamera,
 }: HUDOverlayProps) {
   const [isMuted, setIsMuted] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   const toggleSound = () => {
     const nextState = !isMuted;
@@ -33,6 +73,30 @@ export function HUDOverlay({
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const captureScreenshot = () => {
+    setIsCapturing(true);
+    try {
+      const container = document.querySelector('#galaxy-canvas-container');
+      const canvas = container?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!canvas) {
+        alert('Could not locate canvas element.');
+        return;
+      }
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      const repoTitle = repository?.name ? repository.name.replace(/\//g, '_') : 'galaxy';
+      link.download = `gitgalaxy-${repoTitle}-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+      alert('Could not export screenshot.');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
   const author = activeCommit && repository ? repository.authors.get(activeCommit.author) : null;
   const authorColor = author ? author.color : '#00f0ff';
 
@@ -40,9 +104,9 @@ export function HUDOverlay({
     <div className="absolute inset-0 pointer-events-none p-4 flex flex-col justify-between select-none">
       {/* Top Header Row */}
       <div className="flex items-start justify-between gap-4">
-        {/* Active Commit Card */}
+        {/* Left: Active Commit Card */}
         {activeCommit ? (
-          <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-4 w-96 shadow-[0_4px_30px_rgba(0,240,255,0.15)] pointer-events-auto transition-all duration-200">
+          <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-4 w-80 lg:w-96 shadow-[0_4px_30px_rgba(0,240,255,0.15)] pointer-events-auto transition-all duration-200">
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-800">
               <div className="flex items-center gap-2">
                 <span
@@ -88,11 +152,26 @@ export function HUDOverlay({
           </div>
         )}
 
-        {/* Repository Telemetry & Action Bar */}
-        <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 shadow-xl pointer-events-auto flex items-center gap-3">
+        {/* Center: 3D Search & Filter Engine */}
+        <div className="hidden md:block">
+          <SearchBar3D
+            repository={repository}
+            searchQuery={searchQuery}
+            selectedAuthorFilter={selectedAuthorFilter}
+            selectedExtensionFilter={selectedExtensionFilter}
+            availableExtensions={availableExtensions}
+            onSearchChange={onSearchChange}
+            onAuthorFilterChange={onAuthorFilterChange}
+            onExtensionFilterChange={onExtensionFilterChange}
+            onSelectFile={onSelectFile}
+          />
+        </div>
+
+        {/* Right: Repository Telemetry & Action Bar */}
+        <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 shadow-xl pointer-events-auto flex items-center gap-2.5">
           {/* Telemetry Stats */}
           {repository && (
-            <div className="flex items-center gap-4 px-2 text-xs font-mono border-r border-gray-800 pr-4">
+            <div className="hidden xl:flex items-center gap-4 px-2 text-xs font-mono border-r border-gray-800 pr-4">
               <div className="flex items-center gap-1.5 text-gray-300">
                 <FileCode size={14} className="text-cyan-400" />
                 <span>{repository.files.size}</span>
@@ -116,7 +195,33 @@ export function HUDOverlay({
             </div>
           )}
 
-          {/* Action Buttons */}
+          {/* Hotspot Debt Radar Toggle */}
+          <button
+            onClick={onToggleHotspotMode}
+            className={`p-2 rounded-xl transition-all border ${
+              isHotspotMode
+                ? 'text-rose-400 bg-rose-950/60 border-rose-500/60 shadow-[0_0_15px_rgba(244,63,94,0.4)] scale-105'
+                : 'text-gray-400 hover:text-rose-400 border-transparent hover:bg-gray-800'
+            }`}
+            title={isHotspotMode ? 'Disable Debt Radar' : 'Enable Architectural Debt Radar'}
+          >
+            <Flame size={16} className={isHotspotMode ? 'animate-pulse' : ''} />
+          </button>
+
+          {/* Cinematic Auto-Director Cam Toggle */}
+          <button
+            onClick={onToggleCinematicMode}
+            className={`p-2 rounded-xl transition-all border ${
+              isCinematicMode
+                ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/60 shadow-[0_0_15px_rgba(0,240,255,0.4)] scale-105'
+                : 'text-gray-400 hover:text-cyan-400 border-transparent hover:bg-gray-800'
+            }`}
+            title={isCinematicMode ? 'Disable Cinematic Camera' : 'Enable Cinematic Auto-Director'}
+          >
+            <Video size={16} />
+          </button>
+
+          {/* Recenter Camera */}
           <button
             onClick={onResetCamera}
             className="p-2 rounded-xl text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 transition-colors border border-transparent hover:border-cyan-500/30"
@@ -125,6 +230,7 @@ export function HUDOverlay({
             <RotateCcw size={16} />
           </button>
 
+          {/* Audio Synthesizer Toggle */}
           <button
             onClick={toggleSound}
             className={`p-2 rounded-xl transition-colors border ${
@@ -137,12 +243,23 @@ export function HUDOverlay({
             {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
           </button>
 
+          {/* Screenshot Capture */}
+          <button
+            onClick={captureScreenshot}
+            disabled={isCapturing}
+            className="p-2 rounded-xl text-gray-300 hover:text-cyan-300 hover:bg-cyan-950/50 transition-colors border border-transparent hover:border-cyan-500/30"
+            title="Capture High-Res Screenshot"
+          >
+            <Camera size={16} />
+          </button>
+
+          {/* Import Modal Button */}
           <button
             onClick={onOpenUploader}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-semibold text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.2)] transition-all"
           >
             <Upload size={14} />
-            <span>Import Log</span>
+            <span>Import</span>
           </button>
         </div>
       </div>
