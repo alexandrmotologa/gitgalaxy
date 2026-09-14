@@ -14,13 +14,13 @@ import {
   Flame,
   Video,
   Camera,
-  Share2,
   Rocket,
   Sliders,
   HelpCircle,
 } from 'lucide-react';
 import { soundFx } from '../engine/audioSynthesizer';
 import { SearchBar3D } from './SearchBar3D';
+import { ConstellationIcon } from './ConstellationIcon';
 
 interface HUDOverlayProps {
   repository: RepositoryData | null;
@@ -259,15 +259,17 @@ export function HUDOverlay({
           {/* Code Constellation Lines Toggle */}
           <button
             onClick={onToggleConstellations}
-            className={`px-3 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 ${
+            className={`px-2.5 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 ${
               isConstellationsVisible
                 ? 'text-cyan-300 bg-cyan-950/80 border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.4)] scale-105'
                 : 'text-gray-400 hover:text-gray-200 border-gray-800 hover:bg-gray-800/80'
             }`}
             title="Code Constellations [Shortcut: C]: Toggle celestial web lines between sibling files in directories"
           >
-            <Share2 size={15} className={isConstellationsVisible ? 'text-cyan-400 animate-pulse' : 'text-gray-500'} />
-            <span className="text-xs font-mono font-semibold hidden md:inline">Constellations</span>
+            <ConstellationIcon
+              size={16}
+              className={isConstellationsVisible ? 'text-cyan-400 animate-pulse' : 'text-gray-400'}
+            />
             <span
               className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold ${
                 isConstellationsVisible

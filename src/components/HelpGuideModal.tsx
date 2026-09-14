@@ -2,7 +2,6 @@ import {
   X,
   BookOpen,
   Sun,
-  Share2,
   Flame,
   Rocket,
   Video,
@@ -12,6 +11,7 @@ import {
   Search,
   Sliders,
 } from 'lucide-react';
+import { ConstellationIcon } from './ConstellationIcon';
 
 interface HelpGuideModalProps {
   isOpen: boolean;
@@ -121,12 +121,12 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 flex items-start gap-3">
                 <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 shrink-0">
-                  <Share2 size={16} />
+                  <ConstellationIcon size={16} />
                 </div>
                 <div>
                   <div className="font-bold text-white font-mono">Code Constellations (Shortcut: C)</div>
                   <p className="text-gray-400 text-[11px] leading-relaxed mt-0.5">
-                    Toggles topological celestial lines between sibling files. Click the <code className="text-cyan-300">Constellations: OFF / ON</code> button in the top bar or press <kbd className="bg-gray-800 px-1 py-0.2 rounded text-white">C</kbd> on your keyboard.
+                    Toggles topological celestial lines between sibling files. Click the celestial constellation button in the top bar or press <kbd className="bg-gray-800 px-1 py-0.2 rounded text-white">C</kbd> on your keyboard.
                   </p>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 flex items-start gap-3">
                 <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 shrink-0">
-                  <Share2 size={16} />
+                  <ConstellationIcon size={16} />
                 </div>
                 <div>
                   <div className="font-bold text-white font-mono">Code Constellations</div>
