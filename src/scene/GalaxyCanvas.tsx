@@ -38,7 +38,7 @@ export function GalaxyCanvas({
   return (
     <div className="w-full h-full relative bg-galaxy-950">
       <Canvas
-        camera={{ position: [0, 95, 180], fov: 55, near: 0.5, far: 2000 }}
+        camera={{ position: [0, 95, 180], fov: 55, near: 0.5, far: 5000 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={['#030712']} />

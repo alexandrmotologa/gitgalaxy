@@ -19,6 +19,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
   const lastTickTimeRef = useRef<number>(performance.now());
   const activeBeamsRef = useRef<LaserBeam[]>([]);
   const activeShockwavesRef = useRef<Shockwave[]>([]);
+  const lastCommitTargetPosRef = useRef<[number, number, number] | null>(null);
 
   const commits = repository?.commits || [];
   const totalCommits = commits.length;
@@ -45,14 +46,57 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         updatedFiles.set(id, { ...file, heat: decayedHeat });
       }
 
-      // Fire lasers to touched files
+      const corePos: [number, number, number] = [0, 0, 0];
+      const prevPos = lastCommitTargetPosRef.current;
+
+      // 1. Author Beacon -> Galactic Core (Trunk commit registration)
+      newBeams.push({
+        id: `beam-trunk-${commit.hash}-${now}`,
+        from: authorPos,
+        to: corePos,
+        color: authorColor,
+        progress: 0,
+        duration: Math.max(220, 600 / speed),
+        startTime: now,
+        fileName: 'Trunk (HEAD)',
+      });
+
+      // Core pulse shockwave when commit registers
+      newShockwaves.push({
+        id: `shock-core-${commit.hash}-${now}`,
+        position: corePos,
+        radius: 5,
+        maxRadius: 32,
+        color: authorColor,
+        opacity: 0.9,
+        startTime: now,
+      });
+
+      // 2. Commit DAG History link from previous commit target to Core
+      if (prevPos) {
+        newBeams.push({
+          id: `beam-dag-${commit.hash}-${now}`,
+          from: prevPos,
+          to: corePos,
+          color: '#38bdf8', // Cyber blue history thread
+          progress: 0,
+          duration: Math.max(280, 800 / speed),
+          startTime: now,
+          fileName: 'Commit DAG Parent',
+        });
+      }
+
+      // 3. Core -> Modified Files (Applying changes to planetary nodes)
+      let primaryTarget: [number, number, number] | null = null;
+
       commit.diffs.forEach((diff, dIdx) => {
         const fileNode = updatedFiles.get(diff.path);
         if (fileNode) {
+          primaryTarget = fileNode.position;
           const beamId = `beam-${commit.hash}-${dIdx}-${now}`;
           newBeams.push({
             id: beamId,
-            from: authorPos,
+            from: corePos,
             to: fileNode.position,
             color: authorColor,
             progress: 0,
@@ -84,8 +128,13 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         }
       });
 
+      if (primaryTarget) {
+        lastCommitTargetPosRef.current = primaryTarget;
+      }
+
       if (newBeams.length > 0) {
         soundFx.playLaser();
+        soundFx.playCommitTone(commit.message);
       }
 
       activeBeamsRef.current = [...activeBeamsRef.current, ...newBeams];
