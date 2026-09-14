@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00f0ff" />
+      <stop offset="60%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#030712" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f0ff" />
+      <stop offset="50%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#f43f5e" />
+    </linearGradient>
+  </defs>
+  <!-- Galactic background circle -->
+  <rect width="100" height="100" rx="24" fill="#0b0f19" />
+  <!-- Glowing central core -->
+  <circle cx="50" cy="50" r="30" fill="url(#coreGlow)" />
+  <!-- Central node -->
+  <circle cx="50" cy="50" r="10" fill="#00f0ff" />
+  <!-- Orbiting file nodes and trails -->
+  <ellipse cx="50" cy="50" rx="36" ry="16" stroke="url(#ringGrad)" stroke-width="3" fill="none" transform="rotate(-30 50 50)" />
+  <circle cx="24" cy="34" r="5" fill="#f59e0b" />
+  <circle cx="76" cy="66" r="6" fill="#ef4444" />
+  <circle cx="68" cy="38" r="4" fill="#06b6d4" />
+</svg>
