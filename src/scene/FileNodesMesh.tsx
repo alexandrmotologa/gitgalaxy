@@ -1,5 +1,6 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, ThreeEvent } from '@react-three/fiber';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { FileNode } from '../engine/types';
 import { getHeatColorRgb } from '../engine/churnCalculator';
@@ -11,6 +12,7 @@ interface FileNodesMeshProps {
   authorFilter?: string | null;
   extensionFilter?: string | null;
   searchQuery?: string;
+  activeCommitFiles?: Set<string>;
   onSelectFile: (fileId: string) => void;
   onHoverFile: (fileId: string | null, position?: [number, number, number]) => void;
 }
@@ -25,6 +27,7 @@ export function FileNodesMesh({
   authorFilter = null,
   extensionFilter = null,
   searchQuery = '',
+  activeCommitFiles,
   onSelectFile,
   onHoverFile,
 }: FileNodesMeshProps) {
@@ -97,7 +100,15 @@ export function FileNodesMesh({
 
       let [r, g, b] = getHeatColorRgb(file.heat);
 
-      if (isHotspotMode) {
+      // Active commit file highlight — bright flash that stands out
+      const isCommitActive = activeCommitFiles && activeCommitFiles.size > 0 && activeCommitFiles.has(file.path);
+
+      if (isCommitActive) {
+        const flash = 0.7 + Math.sin(time * 10 + idx) * 0.3;
+        r = Math.min(1, 0.9 * flash);
+        g = Math.min(1, 1.0 * flash);
+        b = Math.min(1, 0.4 * flash);
+      } else if (isHotspotMode) {
         if (file.heat < 0.25) {
           // Dim non-hotspots in X-Ray mode
           r *= 0.15;
@@ -244,6 +255,26 @@ export function FileNodesMesh({
                 />
               </mesh>
             </group>
+          ))}
+
+      {/* Floating file name labels for active commit files (Feature 5) */}
+      {activeCommitFiles && activeCommitFiles.size > 0 &&
+        fileArray
+          .filter((f) => activeCommitFiles.has(f.path))
+          .slice(0, 12)
+          .map((f) => (
+            <Html
+              key={`commit-label-${f.id}`}
+              position={[f.position[0], f.position[1] + f.size * 2.5 + 1.5, f.position[2]]}
+              center
+              distanceFactor={60}
+              zIndexRange={[0, 0]}
+              className="pointer-events-none select-none"
+            >
+              <div className="px-2 py-0.5 rounded-md text-[9px] font-mono whitespace-nowrap bg-amber-950/90 border border-amber-400/60 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.5)] animate-pulse">
+                {f.filename}
+              </div>
+            </Html>
           ))}
     </group>
   );

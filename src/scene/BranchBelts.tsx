@@ -8,9 +8,11 @@ interface BranchBeltsProps {
   branches: BranchTrajectory[];
   activeBranch?: string;
   isMergeActive?: boolean;
+  visible?: boolean;
+  onBranchClick?: (branchName: string) => void;
 }
 
-export function BranchBelts({ branches, activeBranch, isMergeActive }: BranchBeltsProps) {
+export function BranchBelts({ branches, activeBranch, isMergeActive, visible = true, onBranchClick }: BranchBeltsProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
@@ -20,7 +22,7 @@ export function BranchBelts({ branches, activeBranch, isMergeActive }: BranchBel
     }
   });
 
-  if (!branches || branches.length === 0) return null;
+  if (!visible || !branches || branches.length === 0) return null;
 
   return (
     <group ref={groupRef}>
@@ -56,18 +58,20 @@ export function BranchBelts({ branches, activeBranch, isMergeActive }: BranchBel
               />
             </points>
 
-            {/* 3D Floating Branch Label */}
+            {/* 3D Floating Branch Label — zIndexRange keeps it behind modals (z-50) */}
             <Html
               position={[branch.radius, 0.5, 0]}
               center
               distanceFactor={80}
-              className="pointer-events-none select-none"
+              zIndexRange={[0, 0]}
+              className="select-none"
             >
               <div
-                className={`px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap transition-all duration-300 backdrop-blur-md flex items-center gap-1.5 ${
+                onClick={() => onBranchClick?.(branch.name)}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap transition-all duration-300 backdrop-blur-md flex items-center gap-1.5 cursor-pointer hover:scale-110 ${
                   isActive
                     ? 'bg-cyan-950/90 border border-cyan-400 text-white shadow-[0_0_12px_rgba(0,240,255,0.6)] scale-110'
-                    : 'bg-black/60 border border-gray-700/60 text-gray-400 opacity-70'
+                    : 'bg-black/60 border border-gray-700/60 text-gray-400 opacity-70 hover:border-cyan-500/50 hover:text-gray-200'
                 }`}
               >
                 <span

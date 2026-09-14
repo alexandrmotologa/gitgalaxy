@@ -16,6 +16,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
   const [supernovas, setSupernovas] = useState<SupernovaEvent[]>([]);
   const [isMergeActive, setIsMergeActive] = useState(false);
+  const [activeCommitFiles, setActiveCommitFiles] = useState<Set<string>>(new Set());
 
   const animFrameRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(performance.now());
@@ -59,7 +60,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         to: corePos,
         color: authorColor,
         progress: 0,
-        duration: Math.max(220, 600 / speed),
+        duration: Math.max(500, 1400 / speed),
         startTime: now,
         fileName: 'Trunk (HEAD)',
       });
@@ -83,7 +84,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
           to: corePos,
           color: '#38bdf8', // Cyber blue history thread
           progress: 0,
-          duration: Math.max(280, 800 / speed),
+          duration: Math.max(600, 1600 / speed),
           startTime: now,
           fileName: 'Commit DAG Parent',
         });
@@ -103,7 +104,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
             to: fileNode.position,
             color: authorColor,
             progress: 0,
-            duration: Math.max(250, 700 / speed),
+            duration: Math.max(600, 1500 / speed),
             startTime: now,
             fileName: fileNode.filename,
           });
@@ -177,6 +178,12 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
       setLaserBeams(activeBeamsRef.current);
       setShockwaves(activeShockwavesRef.current);
 
+      // Track which files are active in this commit for visual highlighting
+      const activeFiles = new Set(commit.diffs.map((d) => d.path));
+      setActiveCommitFiles(activeFiles);
+      // Clear active highlight after a visible duration
+      setTimeout(() => setActiveCommitFiles(new Set()), Math.max(1200, 2400 / speed));
+
       onFilesUpdated(updatedFiles);
     },
     [repository, speed, onFilesUpdated]
@@ -234,7 +241,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
 
       // 4. Auto advance commit timeline if playing
       if (isPlaying && totalCommits > 0) {
-        const interval = Math.max(120, 1400 / speed);
+        const interval = Math.max(400, 2800 / speed);
         if (time - lastTickTimeRef.current >= interval) {
           lastTickTimeRef.current = time;
           setCurrentIndex((prev) => {
@@ -298,6 +305,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
     shockwaves,
     supernovas,
     isMergeActive,
+    activeCommitFiles,
     togglePlay,
     seek,
     stepForward,

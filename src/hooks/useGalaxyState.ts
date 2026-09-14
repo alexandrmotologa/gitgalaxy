@@ -19,7 +19,7 @@ export function useGalaxyState() {
   const [isCinematicMode, setIsCinematicMode] = useState(false);
 
   // v3 feature states: Constellations, Pilot mode, Commit modal, Help guide
-  const [isConstellationsVisible, setIsConstellationsVisible] = useState(true);
+  const [isConstellationsVisible, setIsConstellationsVisible] = useState(false);
   const [isPilotMode, setIsPilotMode] = useState(false);
   const [inspectedCommit, setInspectedCommit] = useState<GitCommit | null>(null);
   const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
@@ -136,7 +136,7 @@ export function useGalaxyState() {
     if (!repository) return;
 
     if (author) {
-      // Find matching files and focus camera on cluster centroid
+      // Find matching files and focus camera close to cluster centroid
       let cx = 0, cy = 0, cz = 0, count = 0;
       repository.files.forEach((f) => {
         const isMatch = f.authors ? f.authors.includes(author) : f.topAuthor === author;
@@ -148,7 +148,9 @@ export function useGalaxyState() {
         }
       });
       if (count > 0) {
-        setFocusTarget([cx / count, cy / count, cz / count]);
+        // Offset slightly so camera orbits close to cluster
+        const offset = Math.min(40, Math.max(15, count * 2));
+        setFocusTarget([cx / count, cy / count + offset * 0.3, cz / count + offset]);
       }
     } else {
       setFocusTarget([0, 0, 0]);
@@ -170,7 +172,8 @@ export function useGalaxyState() {
         }
       });
       if (count > 0) {
-        setFocusTarget([cx / count, cy / count, cz / count]);
+        const offset = Math.min(40, Math.max(15, count * 2));
+        setFocusTarget([cx / count, cy / count + offset * 0.3, cz / count + offset]);
       }
     } else {
       setFocusTarget([0, 0, 0]);

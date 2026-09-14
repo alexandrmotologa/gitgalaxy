@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useGalaxyState } from './hooks/useGalaxyState';
 import { useGitPlayback } from './hooks/useGitPlayback';
 import { GalaxyCanvas } from './scene/GalaxyCanvas';
@@ -11,6 +11,7 @@ import { HotspotLeaderboard } from './components/HotspotLeaderboard';
 import { CommitDetailModal } from './components/CommitDetailModal';
 import { CockpitHUD, FlightTelemetry } from './components/CockpitHUD';
 import { HelpGuideModal } from './components/HelpGuideModal';
+import { CommitMessageBanner } from './components/CommitMessageBanner';
 
 export function App() {
   const {
@@ -65,6 +66,7 @@ export function App() {
     shockwaves,
     supernovas,
     isMergeActive,
+    activeCommitFiles,
     togglePlay,
     seek,
     stepForward,
@@ -81,6 +83,11 @@ export function App() {
     distanceToCore: 0,
     altitude: 0,
   });
+
+  // Clicking a branch label auto-filters by that branch name (searching commits)
+  const handleBranchClick = useCallback((branchName: string) => {
+    setSearchQuery(branchName);
+  }, [setSearchQuery]);
 
   const selectedFile = selectedFileId && repository ? repository.files.get(selectedFileId) || null : null;
   const hoveredFile = hoveredFileId && repository ? repository.files.get(hoveredFileId) || null : null;
@@ -106,9 +113,11 @@ export function App() {
           authorFilter={selectedAuthorFilter}
           extensionFilter={selectedExtensionFilter}
           searchQuery={searchQuery}
+          activeCommitFiles={activeCommitFiles}
           onSelectFile={selectFile}
           onHoverFile={(fileId) => setHoveredFileId(fileId)}
           onFlightTelemetryUpdate={setFlightTelemetry}
+          onBranchClick={handleBranchClick}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-galaxy-950 text-cyan-400 font-mono text-sm">
@@ -157,6 +166,12 @@ export function App() {
         hotspots={topHotspots}
         onSelectFile={selectFile}
         onClose={toggleHotspotMode}
+      />
+
+      {/* Commit Message Banner — animated overlay during playback */}
+      <CommitMessageBanner
+        commit={currentCommit}
+        isPlaying={isPlaying}
       />
 
       {/* Bottom Controls Area */}
@@ -235,3 +250,4 @@ export function App() {
 }
 
 export default App;
+

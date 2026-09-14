@@ -14,7 +14,7 @@ interface TimelineScrubberProps {
   onSetSpeed: (speed: number) => void;
 }
 
-const SPEED_OPTIONS = [0.5, 1, 5, 25];
+const SPEED_OPTIONS = [0.1, 0.25, 0.5, 1, 5, 25];
 
 export function TimelineScrubber({
   isPlaying,

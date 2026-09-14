@@ -36,9 +36,11 @@ interface GalaxyCanvasProps {
   authorFilter?: string | null;
   extensionFilter?: string | null;
   searchQuery?: string;
+  activeCommitFiles?: Set<string>;
   onSelectFile: (fileId: string) => void;
   onHoverFile: (fileId: string | null, position?: [number, number, number]) => void;
   onFlightTelemetryUpdate?: (telemetry: FlightTelemetry) => void;
+  onBranchClick?: (branchName: string) => void;
 }
 
 export function GalaxyCanvas({
@@ -58,11 +60,17 @@ export function GalaxyCanvas({
   authorFilter = null,
   extensionFilter = null,
   searchQuery = '',
+  activeCommitFiles,
   onSelectFile,
   onHoverFile,
   onFlightTelemetryUpdate,
+  onBranchClick,
 }: GalaxyCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  // Determine if any filter is active — hides non-essential scene clutter
+  const q = searchQuery.trim();
+  const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
 
   // Compute active commit center of gravity for cinematic camera
   const activeCommitTarget = useMemo(() => {
@@ -119,18 +127,29 @@ export function GalaxyCanvas({
 
         <StarField count={2800} />
         <GalacticCore />
-        <DirectoryOrbits directories={repository.directories} />
 
-        <BranchBelts
-          branches={branches}
-          activeBranch={activeCommit?.branch}
-          isMergeActive={isMergeActive}
-        />
-
-        <ConstellationLines
-          repository={repository}
-          visible={isConstellationsVisible}
-        />
+        {/* Hide orbits, belts, ships, beacons, constellations when filtering */}
+        {!isAnyFilterActive && (
+          <>
+            <DirectoryOrbits directories={repository.directories} />
+            <BranchBelts
+              branches={branches}
+              activeBranch={activeCommit?.branch}
+              isMergeActive={isMergeActive}
+              onBranchClick={onBranchClick}
+            />
+            <ConstellationLines
+              repository={repository}
+              visible={isConstellationsVisible}
+            />
+            <AuthorBeacons authors={repository.authors} activeAuthorName={activeCommit?.author} />
+            <AuthorShips
+              authors={repository.authors}
+              activeCommit={activeCommit}
+              files={repository.files}
+            />
+          </>
+        )}
 
         <FileNodesMesh
           files={repository.files}
@@ -139,16 +158,11 @@ export function GalaxyCanvas({
           authorFilter={authorFilter}
           extensionFilter={extensionFilter}
           searchQuery={searchQuery}
+          activeCommitFiles={activeCommitFiles}
           onSelectFile={onSelectFile}
           onHoverFile={onHoverFile}
         />
 
-        <AuthorBeacons authors={repository.authors} activeAuthorName={activeCommit?.author} />
-        <AuthorShips
-          authors={repository.authors}
-          activeCommit={activeCommit}
-          files={repository.files}
-        />
         <CommitLaserTrails beams={laserBeams} />
         <ShockwaveRings shockwaves={shockwaves} />
         <GalacticSupernova events={supernovas} />
@@ -156,3 +170,4 @@ export function GalaxyCanvas({
     </div>
   );
 }
+
