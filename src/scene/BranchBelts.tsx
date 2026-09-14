@@ -11,6 +11,7 @@ interface BranchBeltsProps {
   isMergeActive?: boolean;
   visible?: boolean;
   isModalOpen?: boolean;
+  showAllBelts?: boolean;
   onBranchClick?: (branchName: string) => void;
 }
 
@@ -21,6 +22,7 @@ export function BranchBelts({
   isMergeActive,
   visible = true,
   isModalOpen = false,
+  showAllBelts = false,
   onBranchClick,
 }: BranchBeltsProps) {
   const groupRef = useRef<THREE.Group>(null);
@@ -40,6 +42,13 @@ export function BranchBelts({
         const isCommitActive = activeBranch === branch.name;
         const isSelected = selectedBranch === branch.name;
         const isHighlighted = isCommitActive || isSelected;
+
+        // By default (Option A): Only render the ring when actively playing or selected.
+        // If showAllBelts is enabled (toggle ON): render all branch rings.
+        if (!showAllBelts && !isHighlighted) {
+          return null;
+        }
+
         const color = new THREE.Color(branch.color);
 
         return (
@@ -49,11 +58,11 @@ export function BranchBelts({
           >
             {/* Luminous orbital ring */}
             <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[branch.radius, isHighlighted ? 0.42 : 0.18, 16, 120]} />
+              <torusGeometry args={[branch.radius, isHighlighted ? 0.42 : 0.12, 16, 120]} />
               <meshBasicMaterial
                 color={color}
                 transparent
-                opacity={isSelected ? 0.95 : isCommitActive ? 0.85 : 0.35}
+                opacity={isSelected ? 0.95 : isCommitActive ? 0.85 : 0.22}
                 blending={THREE.AdditiveBlending}
               />
             </mesh>
@@ -63,9 +72,9 @@ export function BranchBelts({
               <ringGeometry args={[branch.radius - 0.5, branch.radius + 0.5, 64]} />
               <pointsMaterial
                 color={color}
-                size={isHighlighted ? 2.0 : 0.8}
+                size={isHighlighted ? 2.0 : 0.6}
                 transparent
-                opacity={isHighlighted ? 0.95 : 0.35}
+                opacity={isHighlighted ? 0.95 : 0.2}
                 blending={THREE.AdditiveBlending}
               />
             </points>

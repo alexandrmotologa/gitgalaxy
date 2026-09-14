@@ -33,6 +33,7 @@ export function App() {
     isHotspotMode,
     isCinematicMode,
     isConstellationsVisible,
+    isBranchBeltsVisible,
     isPilotMode,
     isGuideOpen,
     inspectedCommit,
@@ -55,6 +56,7 @@ export function App() {
     toggleHotspotMode,
     toggleCinematicMode,
     toggleConstellations,
+    toggleBranchBelts,
     togglePilotMode,
     toggleGuide,
     openCommitModal,
@@ -102,6 +104,9 @@ export function App() {
       if (e.key === 'c' || e.key === 'C') {
         e.preventDefault();
         toggleConstellations();
+      } else if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault();
+        toggleBranchBelts();
       } else if (e.key === 'h' || e.key === 'H') {
         e.preventDefault();
         toggleHotspotMode();
@@ -125,6 +130,7 @@ export function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     toggleConstellations,
+    toggleBranchBelts,
     toggleHotspotMode,
     togglePilotMode,
     togglePlay,
@@ -185,6 +191,7 @@ export function App() {
           isHotspotMode={isHotspotMode}
           isCinematicMode={isCinematicMode}
           isConstellationsVisible={isConstellationsVisible}
+          isBranchBeltsVisible={isBranchBeltsVisible}
           isPilotMode={isPilotMode}
           isModalOpen={isAnyModalOpen}
           authorFilter={selectedAuthorFilter}
@@ -217,6 +224,7 @@ export function App() {
         isHotspotMode={isHotspotMode}
         isCinematicMode={isCinematicMode}
         isConstellationsVisible={isConstellationsVisible}
+        isBranchBeltsVisible={isBranchBeltsVisible}
         isPilotMode={isPilotMode}
         onSearchChange={setSearchQuery}
         onAuthorFilterChange={setSelectedAuthorFilter}
@@ -226,6 +234,7 @@ export function App() {
         onToggleHotspotMode={toggleHotspotMode}
         onToggleCinematicMode={toggleCinematicMode}
         onToggleConstellations={toggleConstellations}
+        onToggleBranchBelts={toggleBranchBelts}
         onTogglePilotMode={togglePilotMode}
         onInspectCommit={openCommitModal}
         onOpenUploader={() => setIsUploaderOpen(true)}

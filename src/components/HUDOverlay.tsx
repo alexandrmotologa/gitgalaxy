@@ -6,6 +6,7 @@ import {
   Upload,
   RotateCcw,
   GitCommit as GitCommitIcon,
+  GitBranch,
   Folder,
   Users,
   FileCode,
@@ -34,6 +35,7 @@ interface HUDOverlayProps {
   isHotspotMode: boolean;
   isCinematicMode: boolean;
   isConstellationsVisible?: boolean;
+  isBranchBeltsVisible?: boolean;
   isPilotMode?: boolean;
   onSearchChange: (query: string) => void;
   onAuthorFilterChange: (author: string | null) => void;
@@ -43,6 +45,7 @@ interface HUDOverlayProps {
   onToggleHotspotMode: () => void;
   onToggleCinematicMode: () => void;
   onToggleConstellations?: () => void;
+  onToggleBranchBelts?: () => void;
   onTogglePilotMode?: () => void;
   onInspectCommit?: (commit: GitCommit) => void;
   onOpenUploader: () => void;
@@ -62,6 +65,7 @@ export function HUDOverlay({
   isHotspotMode,
   isCinematicMode,
   isConstellationsVisible = true,
+  isBranchBeltsVisible = false,
   isPilotMode = false,
   onSearchChange,
   onAuthorFilterChange,
@@ -71,6 +75,7 @@ export function HUDOverlay({
   onToggleHotspotMode,
   onToggleCinematicMode,
   onToggleConstellations,
+  onToggleBranchBelts,
   onTogglePilotMode,
   onInspectCommit,
   onOpenUploader,
@@ -278,6 +283,31 @@ export function HUDOverlay({
               }`}
             >
               {isConstellationsVisible ? 'ON' : 'OFF'}
+            </span>
+          </button>
+
+          {/* Branch Belts Orbital Rings Toggle */}
+          <button
+            onClick={onToggleBranchBelts}
+            className={`px-2.5 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 ${
+              isBranchBeltsVisible
+                ? 'text-purple-300 bg-purple-950/80 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.4)] scale-105'
+                : 'text-gray-400 hover:text-gray-200 border-gray-800 hover:bg-gray-800/80'
+            }`}
+            title="Branch Belts [Shortcut: B]: Toggle permanent 3D planetary orbital rings for all Git branches"
+          >
+            <GitBranch
+              size={16}
+              className={isBranchBeltsVisible ? 'text-purple-400 animate-pulse' : 'text-gray-400'}
+            />
+            <span
+              className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold ${
+                isBranchBeltsVisible
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-400/40'
+                  : 'bg-gray-800 text-gray-400'
+              }`}
+            >
+              {isBranchBeltsVisible ? 'ON' : 'OFF'}
             </span>
           </button>
 

@@ -35,6 +35,7 @@ interface GalaxyCanvasProps {
   isHotspotMode?: boolean;
   isCinematicMode?: boolean;
   isConstellationsVisible?: boolean;
+  isBranchBeltsVisible?: boolean;
   isPilotMode?: boolean;
   isModalOpen?: boolean;
   authorFilter?: string | null;
@@ -65,6 +66,7 @@ export function GalaxyCanvas({
   isHotspotMode = false,
   isCinematicMode = false,
   isConstellationsVisible = true,
+  isBranchBeltsVisible = false,
   isPilotMode = false,
   isModalOpen = false,
   authorFilter = null,
@@ -152,6 +154,7 @@ export function GalaxyCanvas({
           selectedBranch={selectedBranch}
           isMergeActive={isMergeActive}
           isModalOpen={isModalOpen}
+          showAllBelts={isBranchBeltsVisible}
           onBranchClick={onBranchClick}
         />
 

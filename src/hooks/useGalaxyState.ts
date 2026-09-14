@@ -20,8 +20,9 @@ export function useGalaxyState() {
   const [isHotspotMode, setIsHotspotMode] = useState(false);
   const [isCinematicMode, setIsCinematicMode] = useState(false);
 
-  // v3 feature states: Constellations, Pilot mode, Commit modal, Help guide
+  // v3 feature states: Constellations, Branch Belts, Pilot mode, Commit modal, Help guide
   const [isConstellationsVisible, setIsConstellationsVisible] = useState(false);
+  const [isBranchBeltsVisible, setIsBranchBeltsVisible] = useState(false);
   const [isPilotMode, setIsPilotMode] = useState(false);
   const [inspectedCommit, setInspectedCommit] = useState<GitCommit | null>(null);
   const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
@@ -114,6 +115,10 @@ export function useGalaxyState() {
 
   const toggleConstellations = useCallback(() => {
     setIsConstellationsVisible((prev) => !prev);
+  }, []);
+
+  const toggleBranchBelts = useCallback(() => {
+    setIsBranchBeltsVisible((prev) => !prev);
   }, []);
 
   const togglePilotMode = useCallback(() => {
@@ -267,6 +272,7 @@ export function useGalaxyState() {
     isHotspotMode,
     isCinematicMode,
     isConstellationsVisible,
+    isBranchBeltsVisible,
     isPilotMode,
     isGuideOpen,
     inspectedCommit,
@@ -289,6 +295,7 @@ export function useGalaxyState() {
     toggleHotspotMode,
     toggleCinematicMode,
     toggleConstellations,
+    toggleBranchBelts,
     togglePilotMode,
     toggleGuide,
     openCommitModal,

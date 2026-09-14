@@ -10,6 +10,7 @@ import {
   Upload,
   Search,
   Sliders,
+  GitBranch,
 } from 'lucide-react';
 import { ConstellationIcon } from './ConstellationIcon';
 
@@ -84,7 +85,7 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
                   Branch Asteroid Belts
                 </div>
                 <p className="text-gray-400 leading-relaxed">
-                  Concentrically tilted rings representing active and historical branches. Click any branch label to highlight files changed on that branch and inspect branch metrics.
+                  Concentrically tilted rings representing active and historical branches. By default, rings stay cleanly hidden and only illuminate dynamically when active or selected. You can also toggle all branch rings permanently ON using the HUD button or shortcut <kbd className="bg-gray-800 px-1 py-0.2 rounded text-white">B</kbd>.
                 </p>
               </div>
 
@@ -156,13 +157,13 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
               </div>
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 flex items-start gap-3">
-                <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 shrink-0">
-                  <ConstellationIcon size={16} />
+                <div className="p-2 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-400 shrink-0">
+                  <GitBranch size={16} />
                 </div>
                 <div>
-                  <div className="font-bold text-white font-mono">Code Constellations</div>
+                  <div className="font-bold text-white font-mono">Branch Belts (Shortcut: B)</div>
                   <p className="text-gray-400 text-[11px] leading-relaxed mt-0.5">
-                    Toggles topological celestial lines connecting sibling files and modules within the same subsystem, revealing structural coupling.
+                    Toggles permanent 3D planetary orbital rings for all Git branches. By default they stay off for a pristine galactic center and illuminate dynamically during commit playback.
                   </p>
                 </div>
               </div>
