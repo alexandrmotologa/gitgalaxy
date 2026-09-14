@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGalaxyState } from './hooks/useGalaxyState';
 import { useGitPlayback } from './hooks/useGitPlayback';
 import { GalaxyCanvas } from './scene/GalaxyCanvas';
@@ -7,6 +8,8 @@ import { FileDetailDrawer } from './components/FileDetailDrawer';
 import { ChurnLegend } from './components/ChurnLegend';
 import { GitUploaderModal } from './components/GitUploaderModal';
 import { HotspotLeaderboard } from './components/HotspotLeaderboard';
+import { CommitDetailModal } from './components/CommitDetailModal';
+import { CockpitHUD, FlightTelemetry } from './components/CockpitHUD';
 
 export function App() {
   const {
@@ -21,8 +24,13 @@ export function App() {
     selectedExtensionFilter,
     isHotspotMode,
     isCinematicMode,
+    isConstellationsVisible,
+    isPilotMode,
+    inspectedCommit,
+    isCommitModalOpen,
     topHotspots,
     availableExtensions,
+    branches,
     setIsUploaderOpen,
     selectFile,
     closeFileDetails,
@@ -33,6 +41,10 @@ export function App() {
     setSelectedExtensionFilter,
     toggleHotspotMode,
     toggleCinematicMode,
+    toggleConstellations,
+    togglePilotMode,
+    openCommitModal,
+    closeCommitModal,
     loadCustomLog,
     loadCommitsDirectly,
     loadSampleDemo,
@@ -47,6 +59,8 @@ export function App() {
     speed,
     laserBeams,
     shockwaves,
+    supernovas,
+    isMergeActive,
     togglePlay,
     seek,
     stepForward,
@@ -55,6 +69,13 @@ export function App() {
   } = useGitPlayback({
     repository,
     onFilesUpdated: handleFilesUpdated,
+  });
+
+  const [flightTelemetry, setFlightTelemetry] = useState<FlightTelemetry>({
+    speed: 0,
+    boostActive: false,
+    distanceToCore: 0,
+    altitude: 0,
   });
 
   const selectedFile = selectedFileId && repository ? repository.files.get(selectedFileId) || null : null;
@@ -71,13 +92,19 @@ export function App() {
           activeCommit={currentCommit}
           laserBeams={laserBeams}
           shockwaves={shockwaves}
+          supernovas={supernovas}
+          branches={branches}
+          isMergeActive={isMergeActive}
           isHotspotMode={isHotspotMode}
           isCinematicMode={isCinematicMode}
+          isConstellationsVisible={isConstellationsVisible}
+          isPilotMode={isPilotMode}
           authorFilter={selectedAuthorFilter}
           extensionFilter={selectedExtensionFilter}
           searchQuery={searchQuery}
           onSelectFile={selectFile}
           onHoverFile={(fileId) => setHoveredFileId(fileId)}
+          onFlightTelemetryUpdate={setFlightTelemetry}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-galaxy-950 text-cyan-400 font-mono text-sm">
@@ -96,15 +123,28 @@ export function App() {
         availableExtensions={availableExtensions}
         isHotspotMode={isHotspotMode}
         isCinematicMode={isCinematicMode}
+        isConstellationsVisible={isConstellationsVisible}
+        isPilotMode={isPilotMode}
         onSearchChange={setSearchQuery}
         onAuthorFilterChange={setSelectedAuthorFilter}
         onExtensionFilterChange={setSelectedExtensionFilter}
         onSelectFile={selectFile}
         onToggleHotspotMode={toggleHotspotMode}
         onToggleCinematicMode={toggleCinematicMode}
+        onToggleConstellations={toggleConstellations}
+        onTogglePilotMode={togglePilotMode}
+        onInspectCommit={openCommitModal}
         onOpenUploader={() => setIsUploaderOpen(true)}
         onResetCamera={resetCamera}
       />
+
+      {/* First-Person Pilot Cockpit HUD */}
+      {isPilotMode && (
+        <CockpitHUD
+          telemetry={flightTelemetry}
+          onExit={togglePilotMode}
+        />
+      )}
 
       {/* Architectural Debt Radar Leaderboard */}
       <HotspotLeaderboard
@@ -147,6 +187,28 @@ export function App() {
         commits={repository?.commits || []}
         onClose={closeFileDetails}
         onFocusNode={() => selectFile(selectedFileId!)}
+      />
+
+      {/* Commit Diff & Detail Inspection Modal */}
+      <CommitDetailModal
+        commit={inspectedCommit || currentCommit || null}
+        isOpen={isCommitModalOpen}
+        onClose={closeCommitModal}
+        onFocusFile={(filePath) => selectFile(filePath)}
+        onPrevCommit={() => {
+          stepBackward();
+          if (currentIndex > 0 && repository) {
+            openCommitModal(repository.commits[currentIndex - 1]);
+          }
+        }}
+        onNextCommit={() => {
+          stepForward();
+          if (currentIndex < totalCommits - 1 && repository) {
+            openCommitModal(repository.commits[currentIndex + 1]);
+          }
+        }}
+        hasPrev={currentIndex > 0}
+        hasNext={currentIndex < totalCommits - 1}
       />
 
       {/* Git Log / GitHub URL Uploader Modal */}

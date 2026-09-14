@@ -14,6 +14,9 @@ import {
   Flame,
   Video,
   Camera,
+  Share2,
+  Rocket,
+  Sliders,
 } from 'lucide-react';
 import { soundFx } from '../engine/audioSynthesizer';
 import { SearchBar3D } from './SearchBar3D';
@@ -28,12 +31,17 @@ interface HUDOverlayProps {
   availableExtensions: string[];
   isHotspotMode: boolean;
   isCinematicMode: boolean;
+  isConstellationsVisible?: boolean;
+  isPilotMode?: boolean;
   onSearchChange: (query: string) => void;
   onAuthorFilterChange: (author: string | null) => void;
   onExtensionFilterChange: (ext: string | null) => void;
   onSelectFile: (fileId: string) => void;
   onToggleHotspotMode: () => void;
   onToggleCinematicMode: () => void;
+  onToggleConstellations?: () => void;
+  onTogglePilotMode?: () => void;
+  onInspectCommit?: (commit: GitCommit) => void;
   onOpenUploader: () => void;
   onResetCamera: () => void;
 }
@@ -48,16 +56,23 @@ export function HUDOverlay({
   availableExtensions,
   isHotspotMode,
   isCinematicMode,
+  isConstellationsVisible = true,
+  isPilotMode = false,
   onSearchChange,
   onAuthorFilterChange,
   onExtensionFilterChange,
   onSelectFile,
   onToggleHotspotMode,
   onToggleCinematicMode,
+  onToggleConstellations,
+  onTogglePilotMode,
+  onInspectCommit,
   onOpenUploader,
   onResetCamera,
 }: HUDOverlayProps) {
   const [isMuted, setIsMuted] = useState(true);
+  const [volume, setVolume] = useState(0.85);
+  const [isAudioMenuOpen, setIsAudioMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
 
@@ -65,6 +80,15 @@ export function HUDOverlay({
     const nextState = !isMuted;
     setIsMuted(nextState);
     soundFx.setMuted(nextState);
+  };
+
+  const handleVolumeChange = (newVol: number) => {
+    setVolume(newVol);
+    soundFx.setMasterVolume(newVol);
+    if (newVol > 0 && isMuted) {
+      setIsMuted(false);
+      soundFx.setMuted(false);
+    }
   };
 
   const copyHash = (hash: string) => {
@@ -106,7 +130,11 @@ export function HUDOverlay({
       <div className="flex items-start justify-between gap-4">
         {/* Left: Active Commit Card */}
         {activeCommit ? (
-          <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-4 w-80 lg:w-96 shadow-[0_4px_30px_rgba(0,240,255,0.15)] pointer-events-auto transition-all duration-200">
+          <div
+            onClick={() => onInspectCommit && onInspectCommit(activeCommit)}
+            className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 hover:border-cyan-400/80 rounded-2xl p-4 w-80 lg:w-96 shadow-[0_4px_30px_rgba(0,240,255,0.15)] pointer-events-auto transition-all duration-200 cursor-pointer group hover:scale-[1.01]"
+            title="Click to inspect full commit diff and stats"
+          >
             <div className="flex items-center justify-between mb-2 pb-2 border-b border-gray-800">
               <div className="flex items-center gap-2">
                 <span
@@ -116,9 +144,17 @@ export function HUDOverlay({
                 <span className="font-mono text-xs font-bold text-gray-200">
                   {activeCommit.author}
                 </span>
+                {activeCommit.branch && (
+                  <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-950 text-purple-300 border border-purple-500/30">
+                    {activeCommit.branch}
+                  </span>
+                )}
               </div>
               <button
-                onClick={() => copyHash(activeCommit.hash)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  copyHash(activeCommit.hash);
+                }}
                 className="flex items-center gap-1 font-mono text-[11px] text-cyan-400 hover:text-cyan-300 bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/20 transition-colors"
                 title="Copy commit hash"
               >
@@ -127,7 +163,7 @@ export function HUDOverlay({
               </button>
             </div>
 
-            <div className="text-sm font-sans font-medium text-gray-100 mb-2.5 line-clamp-2 leading-snug">
+            <div className="text-sm font-sans font-medium text-gray-100 mb-2.5 line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors">
               {activeCommit.message}
             </div>
 
@@ -144,6 +180,9 @@ export function HUDOverlay({
                   ({activeCommit.diffs.length} {activeCommit.diffs.length === 1 ? 'file' : 'files'})
                 </span>
               </div>
+            </div>
+            <div className="mt-2 pt-1 border-t border-gray-800/60 text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-400 flex items-center justify-between">
+              <span>Inspect diffs & metrics &rarr;</span>
             </div>
           </div>
         ) : (
@@ -168,7 +207,7 @@ export function HUDOverlay({
         </div>
 
         {/* Right: Repository Telemetry & Action Bar */}
-        <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 shadow-xl pointer-events-auto flex items-center gap-2.5">
+        <div className="bg-galaxy-900/85 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-3 shadow-xl pointer-events-auto flex items-center gap-2.5 relative">
           {/* Telemetry Stats */}
           {repository && (
             <div className="hidden xl:flex items-center gap-4 px-2 text-xs font-mono border-r border-gray-800 pr-4">
@@ -194,6 +233,32 @@ export function HUDOverlay({
               </div>
             </div>
           )}
+
+          {/* Astral Flight Pilot Mode Toggle */}
+          <button
+            onClick={onTogglePilotMode}
+            className={`p-2 rounded-xl transition-all border ${
+              isPilotMode
+                ? 'text-cyan-300 bg-cyan-950/80 border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.6)] scale-105 animate-pulse'
+                : 'text-gray-400 hover:text-cyan-300 border-transparent hover:bg-gray-800'
+            }`}
+            title={isPilotMode ? 'Exit Astral Pilot Flight Mode' : 'Enter 6-DOF Astral Flight Pilot Mode'}
+          >
+            <Rocket size={16} />
+          </button>
+
+          {/* Code Constellation Lines Toggle */}
+          <button
+            onClick={onToggleConstellations}
+            className={`p-2 rounded-xl transition-all border ${
+              isConstellationsVisible
+                ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]'
+                : 'text-gray-500 hover:text-gray-300 border-transparent hover:bg-gray-800'
+            }`}
+            title={isConstellationsVisible ? 'Hide Directory Constellations' : 'Show Directory Constellations'}
+          >
+            <Share2 size={16} />
+          </button>
 
           {/* Hotspot Debt Radar Toggle */}
           <button
@@ -230,18 +295,52 @@ export function HUDOverlay({
             <RotateCcw size={16} />
           </button>
 
-          {/* Audio Synthesizer Toggle */}
-          <button
-            onClick={toggleSound}
-            className={`p-2 rounded-xl transition-colors border ${
-              !isMuted
-                ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
-                : 'text-gray-400 hover:text-gray-200 border-transparent hover:bg-gray-800'
-            }`}
-            title={isMuted ? 'Unmute Space Audio' : 'Mute Audio'}
-          >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-          </button>
+          {/* Audio Synthesizer Master Volume & Mute */}
+          <div className="relative">
+            <button
+              onClick={toggleSound}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setIsAudioMenuOpen(!isAudioMenuOpen);
+              }}
+              className={`p-2 rounded-xl transition-colors border ${
+                !isMuted
+                  ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.3)]'
+                  : 'text-gray-400 hover:text-gray-200 border-transparent hover:bg-gray-800'
+              }`}
+              title={isMuted ? 'Unmute Space Audio (Right click for volume slider)' : 'Mute Audio (Right click for volume slider)'}
+            >
+              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+
+            {/* Quick volume toggle button next to mute */}
+            <button
+              onClick={() => setIsAudioMenuOpen(!isAudioMenuOpen)}
+              className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-gray-800 text-gray-400 hover:text-cyan-300"
+              title="Audio Volume Slider"
+            >
+              <Sliders size={9} />
+            </button>
+
+            {/* Audio Volume Popover */}
+            {isAudioMenuOpen && (
+              <div className="absolute right-0 top-12 bg-galaxy-900/95 border border-cyan-500/40 rounded-2xl p-3 shadow-2xl w-48 z-50 font-mono text-xs animate-fade-in">
+                <div className="flex items-center justify-between text-gray-300 mb-2">
+                  <span>Master Volume</span>
+                  <span className="text-cyan-400 font-bold">{Math.round(volume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.02"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="w-full accent-cyan-400 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
 
           {/* Screenshot Capture */}
           <button

@@ -1,4 +1,4 @@
-import { GitCommit, FileDiff } from './types';
+import { GitCommit, FileDiff, BranchTrajectory } from './types';
 
 /**
  * Parses raw text produced by:
@@ -46,6 +46,7 @@ export function parseNumstatGitLog(rawText: string): GitCommit[] {
       }
 
       const timestamp = Date.parse(dateStr) || Date.now();
+      const branch = inferBranch(message);
 
       if (hash) {
         commits.push({
@@ -56,6 +57,7 @@ export function parseNumstatGitLog(rawText: string): GitCommit[] {
           timestamp,
           message,
           diffs,
+          branch,
         });
       }
     } else {
@@ -87,14 +89,20 @@ export function parseJsonGitLog(jsonContent: string): GitCommit[] {
         : [];
 
       const dateStr = String(item.date || '');
+      const msg = String(item.message || '');
+      const branch = typeof item.branch === 'string' && item.branch.length > 0
+        ? item.branch
+        : inferBranch(msg);
+
       return {
         hash: String(item.hash || ''),
         author: String(item.author || 'Unknown'),
         email: String(item.email || ''),
         date: dateStr,
         timestamp: Date.parse(dateStr) || Date.now(),
-        message: String(item.message || ''),
+        message: msg,
         diffs,
+        branch,
       };
     });
 
@@ -129,4 +137,97 @@ function sanitizeFilePath(rawPath: string): string {
     }
   }
   return rawPath.replace(/\\/g, '/');
+}
+
+/**
+ * Infers git branch based on commit message semantics and merge strings.
+ */
+export function inferBranch(message: string): string {
+  const prMatch = message.match(/Merge pull request #\d+ from ([\w\-./]+)/i);
+  if (prMatch && prMatch[1]) {
+    return prMatch[1].replace(/^(?:origin\/|refs\/heads\/)/, '');
+  }
+
+  const branchMatch = message.match(/Merge branch '([\w\-./]+)'/i);
+  if (branchMatch && branchMatch[1]) {
+    return branchMatch[1].replace(/^(?:origin\/|refs\/heads\/)/, '');
+  }
+
+  const lower = message.toLowerCase();
+  if (lower.startsWith('feat') || lower.includes('(feat') || lower.includes('feature/')) {
+    return 'feature/core';
+  }
+  if (lower.startsWith('fix') || lower.includes('(fix') || lower.includes('bugfix/') || lower.includes('patch')) {
+    return 'bugfix/patch';
+  }
+  if (lower.startsWith('refactor') || lower.includes('(refactor')) {
+    return 'refactor/engine';
+  }
+  if (lower.startsWith('perf') || lower.includes('(perf')) {
+    return 'perf/optimization';
+  }
+  if (lower.startsWith('chore') || lower.includes('(chore') || lower.startsWith('docs')) {
+    return 'chore/infra';
+  }
+
+  return 'main';
+}
+
+/**
+ * Groups commits into visual branch trajectories with distinct galactic orbits and colors.
+ */
+export function extractUniqueBranches(commits: GitCommit[]): BranchTrajectory[] {
+  const branchCounts = new Map<string, number>();
+  commits.forEach((c) => {
+    const b = c.branch || 'main';
+    branchCounts.set(b, (branchCounts.get(b) || 0) + 1);
+  });
+
+  const branchColors: Record<string, string> = {
+    'main': '#00f0ff', // Cyber cyan
+    'master': '#00f0ff',
+    'feature/core': '#c084fc', // Violet / magenta
+    'bugfix/patch': '#f59e0b', // Amber
+    'refactor/engine': '#10b981', // Emerald
+    'perf/optimization': '#38bdf8', // Sky
+    'chore/infra': '#ec4899', // Rose
+  };
+
+  const trajectories: BranchTrajectory[] = [];
+  let index = 0;
+
+  // Always ensure 'main' is first at root orbit
+  const sortedBranches = Array.from(branchCounts.entries()).sort((a, b) => {
+    if (a[0] === 'main' || a[0] === 'master') return -1;
+    if (b[0] === 'main' || b[0] === 'master') return 1;
+    return b[1] - a[1];
+  });
+
+  sortedBranches.slice(0, 7).forEach(([name, count]) => {
+    const color = branchColors[name] || getSeededColor(name);
+    const radius = 16 + index * 10;
+    const tiltAngle = (index * 0.22) * (index % 2 === 0 ? 1 : -1);
+
+    trajectories.push({
+      name,
+      color,
+      radius,
+      tiltAngle,
+      commitCount: count,
+    });
+    index++;
+  });
+
+  return trajectories;
+}
+
+function getSeededColor(str: string): string {
+  const hues = [190, 270, 45, 150, 330, 210, 80];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const hue = hues[Math.abs(hash) % hues.length];
+  return `hsl(${hue}, 85%, 60%)`;
 }

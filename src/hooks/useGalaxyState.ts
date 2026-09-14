@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RepositoryData, FileNode } from '../engine/types';
-import { parseGitLog } from '../engine/gitLogParser';
+import { RepositoryData, FileNode, GitCommit } from '../engine/types';
+import { parseGitLog, extractUniqueBranches } from '../engine/gitLogParser';
 import { buildGalaxyLayout } from '../engine/galaxyLayout';
 
 export function useGalaxyState() {
@@ -11,12 +11,18 @@ export function useGalaxyState() {
   const [focusTarget, setFocusTarget] = useState<[number, number, number] | null>(null);
   const [isUploaderOpen, setIsUploaderOpen] = useState(false);
 
-  // New v2 states: Filters, Hotspot radar, and Cinematic camera
+  // Filters, Hotspot radar, and Cinematic camera
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
   const [selectedExtensionFilter, setSelectedExtensionFilter] = useState<string | null>(null);
   const [isHotspotMode, setIsHotspotMode] = useState(false);
   const [isCinematicMode, setIsCinematicMode] = useState(false);
+
+  // v3 feature states: Constellations, Pilot mode, Commit modal
+  const [isConstellationsVisible, setIsConstellationsVisible] = useState(true);
+  const [isPilotMode, setIsPilotMode] = useState(false);
+  const [inspectedCommit, setInspectedCommit] = useState<GitCommit | null>(null);
+  const [isCommitModalOpen, setIsCommitModalOpen] = useState(false);
 
   // Load sample dataset
   const loadSampleDemo = useCallback(async () => {
@@ -103,6 +109,23 @@ export function useGalaxyState() {
     setIsCinematicMode((prev) => !prev);
   }, []);
 
+  const toggleConstellations = useCallback(() => {
+    setIsConstellationsVisible((prev) => !prev);
+  }, []);
+
+  const togglePilotMode = useCallback(() => {
+    setIsPilotMode((prev) => !prev);
+  }, []);
+
+  const openCommitModal = useCallback((commit: GitCommit) => {
+    setInspectedCommit(commit);
+    setIsCommitModalOpen(true);
+  }, []);
+
+  const closeCommitModal = useCallback(() => {
+    setIsCommitModalOpen(false);
+  }, []);
+
   const handleFilesUpdated = useCallback((updatedFiles: Map<string, FileNode>) => {
     setRepository((prev) => {
       if (!prev) return null;
@@ -131,6 +154,12 @@ export function useGalaxyState() {
     return Array.from(set).sort();
   }, [repository]);
 
+  // Extract unique visual branch orbits from repository commits
+  const branches = useMemo(() => {
+    if (!repository || repository.commits.length === 0) return [];
+    return extractUniqueBranches(repository.commits);
+  }, [repository]);
+
   return {
     repository,
     isLoading,
@@ -143,8 +172,13 @@ export function useGalaxyState() {
     selectedExtensionFilter,
     isHotspotMode,
     isCinematicMode,
+    isConstellationsVisible,
+    isPilotMode,
+    inspectedCommit,
+    isCommitModalOpen,
     topHotspots,
     availableExtensions,
+    branches,
     setIsUploaderOpen,
     selectFile,
     closeFileDetails,
@@ -156,9 +190,14 @@ export function useGalaxyState() {
     setSelectedExtensionFilter,
     toggleHotspotMode,
     toggleCinematicMode,
+    toggleConstellations,
+    togglePilotMode,
+    openCommitModal,
+    closeCommitModal,
     loadCustomLog,
     loadCommitsDirectly,
     loadSampleDemo,
     handleFilesUpdated,
   };
 }
+

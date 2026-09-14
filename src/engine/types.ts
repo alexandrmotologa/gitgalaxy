@@ -15,6 +15,25 @@ export interface GitCommit {
   timestamp: number;
   message: string;
   diffs: FileDiff[];
+  branch?: string;
+}
+
+export interface BranchTrajectory {
+  name: string;
+  color: string;
+  radius: number;
+  tiltAngle: number;
+  commitCount: number;
+}
+
+export interface SupernovaEvent {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  maxRadius: number;
+  startTime: number;
+  duration: number;
+  label?: string;
 }
 
 export interface GitAuthor {

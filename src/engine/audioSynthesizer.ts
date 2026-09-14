@@ -1,6 +1,7 @@
 class AudioSynthesizer {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = true;
+  private volume: number = 0.85;
   private droneOsc1: OscillatorNode | null = null;
   private droneOsc2: OscillatorNode | null = null;
   private droneLfo: OscillatorNode | null = null;
@@ -15,11 +16,22 @@ class AudioSynthesizer {
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioCtx();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
       this.masterGain.connect(this.ctx.destination);
     } catch {
       console.warn('Web Audio API not supported in this browser.');
     }
+  }
+
+  public setMasterVolume(vol: number) {
+    this.volume = Math.max(0, Math.min(1, vol));
+    if (this.ctx && this.masterGain) {
+      this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
+    }
+  }
+
+  public getMasterVolume(): number {
+    return this.volume;
   }
 
   public async setMuted(muted: boolean) {
@@ -257,6 +269,131 @@ class AudioSynthesizer {
 
       osc.start(now);
       osc.stop(now + 0.29);
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  /**
+   * Resonant celestial chord (D4 + F#4 + A4) triggered during git branch merge events.
+   */
+  public playMergeChord() {
+    if (this.isMuted || !this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+
+    try {
+      const now = this.ctx.currentTime;
+      const freqs = [293.66, 369.99, 440.0]; // D major chord
+      freqs.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = idx === 0 ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.04);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(0.09, now + 0.08 + idx * 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.65);
+
+        osc.connect(gain);
+        gain.connect(this.masterGain || this.ctx.destination);
+
+        osc.start(now + idx * 0.04);
+        osc.stop(now + 0.7);
+      });
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  /**
+   * High-frequency filtered noise fizzle when code is pruned/deleted.
+   */
+  public playDeletionFizzle() {
+    if (this.isMuted || !this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.18);
+
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(1400, now);
+      filter.Q.setValueAtTime(4.0, now);
+
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain || this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.19);
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  /**
+   * Triumphant deep gravitational rumble + shimmering arpeggio for major milestones and releases.
+   */
+  public playMilestoneSupernova() {
+    if (this.isMuted || !this.ctx) return;
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+
+    try {
+      const now = this.ctx.currentTime;
+
+      // Sub-bass gravitational wave
+      const subOsc = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      subOsc.type = 'sine';
+      subOsc.frequency.setValueAtTime(90, now);
+      subOsc.frequency.exponentialRampToValueAtTime(32, now + 0.8);
+
+      subGain.gain.setValueAtTime(0.25, now);
+      subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+      subOsc.connect(subGain);
+      subGain.connect(this.masterGain || this.ctx.destination);
+
+      subOsc.start(now);
+      subOsc.stop(now + 0.9);
+
+      // Ascending pentatonic arpeggio (C5 -> E5 -> G5 -> B5 -> C6)
+      const arpeggio = [523.25, 659.25, 783.99, 987.77, 1046.5];
+      arpeggio.forEach((f, i) => {
+        if (!this.ctx) return;
+        const noteOsc = this.ctx.createOscillator();
+        const noteGain = this.ctx.createGain();
+
+        noteOsc.type = 'sine';
+        noteOsc.frequency.setValueAtTime(f, now + i * 0.08);
+
+        noteGain.gain.setValueAtTime(0.001, now + i * 0.08);
+        noteGain.gain.exponentialRampToValueAtTime(0.08, now + i * 0.08 + 0.04);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+
+        noteOsc.connect(noteGain);
+        noteGain.connect(this.masterGain || this.ctx.destination);
+
+        noteOsc.start(now + i * 0.08);
+        noteOsc.stop(now + i * 0.08 + 0.36);
+      });
     } catch {
       // Non-fatal
     }

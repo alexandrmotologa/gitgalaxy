@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { GitCommit, RepositoryData, LaserBeam, Shockwave } from '../engine/types';
+import { GitCommit, RepositoryData, LaserBeam, Shockwave, SupernovaEvent } from '../engine/types';
 import { calculateChurnDelta, applyHeatDecay, normalizeHeat } from '../engine/churnCalculator';
 import { soundFx } from '../engine/audioSynthesizer';
 
@@ -14,11 +14,14 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
   const [speed, setSpeed] = useState(1);
   const [laserBeams, setLaserBeams] = useState<LaserBeam[]>([]);
   const [shockwaves, setShockwaves] = useState<Shockwave[]>([]);
+  const [supernovas, setSupernovas] = useState<SupernovaEvent[]>([]);
+  const [isMergeActive, setIsMergeActive] = useState(false);
 
   const animFrameRef = useRef<number | null>(null);
   const lastTickTimeRef = useRef<number>(performance.now());
   const activeBeamsRef = useRef<LaserBeam[]>([]);
   const activeShockwavesRef = useRef<Shockwave[]>([]);
+  const activeSupernovasRef = useRef<SupernovaEvent[]>([]);
   const lastCommitTargetPosRef = useRef<[number, number, number] | null>(null);
 
   const commits = repository?.commits || [];
@@ -132,7 +135,39 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         lastCommitTargetPosRef.current = primaryTarget;
       }
 
-      if (newBeams.length > 0) {
+      // Check commit characteristics for dynamic procedural audio & supernovas
+      const lowerMsg = commit.message.toLowerCase();
+      const isMerge = lowerMsg.includes('merge');
+      const isMilestone =
+        commit.diffs.length >= 7 ||
+        lowerMsg.includes('release') ||
+        lowerMsg.includes('tag') ||
+        /v\d+\./.test(lowerMsg);
+
+      const totalAdds = commit.diffs.reduce((a, d) => a + d.additions, 0);
+      const totalDels = commit.diffs.reduce((a, d) => a + d.deletions, 0);
+
+      if (isMerge) {
+        setIsMergeActive(true);
+        soundFx.playMergeChord();
+        setTimeout(() => setIsMergeActive(false), 900);
+      } else if (isMilestone) {
+        soundFx.playMilestoneSupernova();
+        const supernovaDuration = Math.max(1200, 2000 / speed);
+        const newSupernova: SupernovaEvent = {
+          id: `supernova-${commit.hash}-${now}`,
+          position: corePos,
+          color: authorColor,
+          maxRadius: 180,
+          startTime: now,
+          duration: supernovaDuration,
+          label: commit.message.length > 28 ? commit.message.slice(0, 28) + '...' : commit.message,
+        };
+        activeSupernovasRef.current = [...activeSupernovasRef.current, newSupernova];
+        setSupernovas([...activeSupernovasRef.current]);
+      } else if (totalDels > totalAdds + 5) {
+        soundFx.playDeletionFizzle();
+      } else if (newBeams.length > 0) {
         soundFx.playLaser();
         soundFx.playCommitTone(commit.message);
       }
@@ -147,7 +182,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
     [repository, speed, onFilesUpdated]
   );
 
-  // Animation frame loop for smooth laser progression and shockwaves
+  // Animation frame loop for smooth laser progression, shockwaves, and supernovas
   useEffect(() => {
     const loop = (time: number) => {
       // 1. Advance lasers
@@ -186,7 +221,18 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         setShockwaves([...remainingWaves]);
       }
 
-      // 3. Auto advance commit timeline if playing
+      // 3. Supernova events
+      if (activeSupernovasRef.current.length > 0) {
+        const remainingSupernovas = activeSupernovasRef.current.filter((s) => {
+          return time - s.startTime < s.duration;
+        });
+        if (remainingSupernovas.length !== activeSupernovasRef.current.length) {
+          activeSupernovasRef.current = remainingSupernovas;
+          setSupernovas([...remainingSupernovas]);
+        }
+      }
+
+      // 4. Auto advance commit timeline if playing
       if (isPlaying && totalCommits > 0) {
         const interval = Math.max(120, 1400 / speed);
         if (time - lastTickTimeRef.current >= interval) {
@@ -250,6 +296,8 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
     speed,
     laserBeams,
     shockwaves,
+    supernovas,
+    isMergeActive,
     togglePlay,
     seek,
     stepForward,

@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
-import { RepositoryData, LaserBeam, Shockwave, GitCommit } from '../engine/types';
+import { RepositoryData, LaserBeam, Shockwave, GitCommit, BranchTrajectory, SupernovaEvent } from '../engine/types';
 import { StarField } from './StarField';
 import { GalacticCore } from './GalacticCore';
 import { DirectoryOrbits } from './DirectoryOrbits';
@@ -13,6 +13,11 @@ import { AuthorShips } from './AuthorShips';
 import { CommitLaserTrails } from './CommitLaserTrails';
 import { ShockwaveRings } from './ShockwaveRings';
 import { CameraController } from './CameraController';
+import { BranchBelts } from './BranchBelts';
+import { ConstellationLines } from './ConstellationLines';
+import { GalacticSupernova } from './GalacticSupernova';
+import { FlightController } from './FlightController';
+import { FlightTelemetry } from '../components/CockpitHUD';
 
 interface GalaxyCanvasProps {
   repository: RepositoryData;
@@ -21,13 +26,19 @@ interface GalaxyCanvasProps {
   activeCommit?: GitCommit;
   laserBeams: LaserBeam[];
   shockwaves: Shockwave[];
+  supernovas?: SupernovaEvent[];
+  branches?: BranchTrajectory[];
+  isMergeActive?: boolean;
   isHotspotMode?: boolean;
   isCinematicMode?: boolean;
+  isConstellationsVisible?: boolean;
+  isPilotMode?: boolean;
   authorFilter?: string | null;
   extensionFilter?: string | null;
   searchQuery?: string;
   onSelectFile: (fileId: string) => void;
   onHoverFile: (fileId: string | null, position?: [number, number, number]) => void;
+  onFlightTelemetryUpdate?: (telemetry: FlightTelemetry) => void;
 }
 
 export function GalaxyCanvas({
@@ -37,13 +48,19 @@ export function GalaxyCanvas({
   activeCommit,
   laserBeams,
   shockwaves,
+  supernovas = [],
+  branches = [],
+  isMergeActive = false,
   isHotspotMode = false,
   isCinematicMode = false,
+  isConstellationsVisible = true,
+  isPilotMode = false,
   authorFilter = null,
   extensionFilter = null,
   searchQuery = '',
   onSelectFile,
   onHoverFile,
+  onFlightTelemetryUpdate,
 }: GalaxyCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
@@ -83,18 +100,37 @@ export function GalaxyCanvas({
           minDistance={10}
           maxDistance={700}
           maxPolarAngle={Math.PI / 2 + 0.25}
+          enabled={!isPilotMode}
         />
 
-        <CameraController
-          controlsRef={controlsRef}
-          focusTarget={focusTarget}
-          isCinematicMode={isCinematicMode}
-          activeCommitTarget={activeCommitTarget}
+        {!isPilotMode && (
+          <CameraController
+            controlsRef={controlsRef}
+            focusTarget={focusTarget}
+            isCinematicMode={isCinematicMode}
+            activeCommitTarget={activeCommitTarget}
+          />
+        )}
+
+        <FlightController
+          enabled={isPilotMode}
+          onTelemetryUpdate={onFlightTelemetryUpdate}
         />
 
         <StarField count={2800} />
         <GalacticCore />
         <DirectoryOrbits directories={repository.directories} />
+
+        <BranchBelts
+          branches={branches}
+          activeBranch={activeCommit?.branch}
+          isMergeActive={isMergeActive}
+        />
+
+        <ConstellationLines
+          repository={repository}
+          visible={isConstellationsVisible}
+        />
 
         <FileNodesMesh
           files={repository.files}
@@ -115,6 +151,7 @@ export function GalaxyCanvas({
         />
         <CommitLaserTrails beams={laserBeams} />
         <ShockwaveRings shockwaves={shockwaves} />
+        <GalacticSupernova events={supernovas} />
       </Canvas>
     </div>
   );
