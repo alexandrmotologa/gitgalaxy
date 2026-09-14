@@ -2,9 +2,7 @@ import {
   X,
   BookOpen,
   Sun,
-  Globe,
   Share2,
-  Zap,
   Flame,
   Rocket,
   Video,
@@ -24,7 +22,7 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="bg-galaxy-900/95 border border-cyan-500/40 rounded-3xl w-full max-w-4xl max-h-[88vh] flex flex-col shadow-[0_0_60px_rgba(0,240,255,0.25)] overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-gray-800 flex items-center justify-between">
@@ -66,49 +64,37 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
                   Galactic Core (The Sun / Nucleus)
                 </div>
                 <p className="text-gray-400 leading-relaxed">
-                  The luminous glowing star at the very center represents the Git trunk (<code className="text-cyan-300">HEAD / main</code>). Every commit passes through this nucleus before changes propagate outward to individual files.
+                  The luminous glowing star at the very center represents the Git trunk (<code className="text-cyan-300">HEAD / main</code>). Click it at any time to inspect the current active commit details and diff!
                 </p>
               </div>
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-4 space-y-1.5">
                 <div className="flex items-center gap-2 text-white font-bold font-mono">
-                  <Globe size={14} className="text-purple-400" />
-                  Celestial Bodies (File Nodes)
+                  <span className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_10px_#10b981]" />
+                  Planetary File Nodes
                 </div>
                 <p className="text-gray-400 leading-relaxed">
-                  Every floating sphere is a source file. <strong>Sphere size</strong> represents file volume (LOC). <strong>Color</strong> indicates thermal churn heat:
-                  <br />
-                  <span className="text-cyan-400">• Cyan</span>: Stable, cold code.
-                  <br />
-                  <span className="text-amber-400">• Amber</span>: Actively edited code.
-                  <br />
-                  <span className="text-rose-400">• Crimson</span>: High-churn volatile architectural hotspot.
+                  Every file in the repository is a celestial sphere orbiting its directory center. Click any planet to open the File Detail Drawer with churn heat, additions, deletions, top author, and commit history.
                 </p>
               </div>
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-4 space-y-1.5">
                 <div className="flex items-center gap-2 text-white font-bold font-mono">
-                  <Share2 size={14} className="text-emerald-400" />
-                  Orbital Belts & Constellations
+                  <span className="w-3 h-3 rounded-full bg-purple-400 shadow-[0_0_10px_#c084fc]" />
+                  Branch Asteroid Belts
                 </div>
                 <p className="text-gray-400 leading-relaxed">
-                  Concentric rings represent directory systems grouping related modules. Tilted Keplerian outer belts represent Git branches (<code className="text-cyan-300">main</code>, <code className="text-purple-300">feature/*</code>, <code className="text-amber-300">fix/*</code>). Glowing constellation lines link sibling files.
+                  Concentrically tilted rings representing active and historical branches. Click any branch label to highlight files changed on that branch and inspect branch metrics.
                 </p>
               </div>
 
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-4 space-y-1.5">
                 <div className="flex items-center gap-2 text-white font-bold font-mono">
-                  <Zap size={14} className="text-amber-400" />
-                  Laser Beams, Ships & Supernovas
+                  <span className="w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_10px_#f59e0b]" />
+                  Author Beacon Satellites
                 </div>
                 <p className="text-gray-400 leading-relaxed">
-                  When a commit is executed:
-                  <br />
-                  1. Particle beams shoot from author beacons to Core and into modified files.
-                  <br />
-                  2. Contributor scout ships fly with ion thrusters toward touched files.
-                  <br />
-                  3. Massive merges and release tags ignite expanding Supernova shockwaves!
+                  Orbital octahedron beacons on the perimeter representing contributors. Click any author satellite to view their Contributor Profile Drawer with their full commit history.
                 </p>
               </div>
             </div>
@@ -118,7 +104,7 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
           <div>
             <h3 className="text-sm font-bold font-mono text-cyan-400 uppercase tracking-wider mb-3 flex items-center gap-2">
               <Sliders size={16} />
-              2. HUD Action Bar Controls (What Each Button Does)
+              2. HUD Action Bar Controls & Shortcuts
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 flex items-start gap-3">
@@ -128,7 +114,19 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
                 <div>
                   <div className="font-bold text-white font-mono">Search & Filters (Ctrl+K)</div>
                   <p className="text-gray-400 text-[11px] leading-relaxed mt-0.5">
-                    Search files with instant autocomplete, lock 3D camera to any file, or filter by specific author or extension. Matching files enlarge while non-matching files shrink into faint background motes.
+                    Search files with instant autocomplete, lock 3D camera to any file, or filter by specific author or extension.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-black/40 border border-gray-800 rounded-2xl p-3.5 flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 shrink-0">
+                  <Share2 size={16} />
+                </div>
+                <div>
+                  <div className="font-bold text-white font-mono">Code Constellations (Shortcut: C)</div>
+                  <p className="text-gray-400 text-[11px] leading-relaxed mt-0.5">
+                    Toggles topological celestial lines between sibling files. Click the <code className="text-cyan-300">Constellations: OFF / ON</code> button in the top bar or press <kbd className="bg-gray-800 px-1 py-0.2 rounded text-white">C</kbd> on your keyboard.
                   </p>
                 </div>
               </div>

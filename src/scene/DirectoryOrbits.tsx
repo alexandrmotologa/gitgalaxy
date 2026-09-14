@@ -5,9 +5,10 @@ import { DirectoryNode } from '../engine/types';
 
 interface DirectoryOrbitsProps {
   directories: Map<string, DirectoryNode>;
+  isModalOpen?: boolean;
 }
 
-export function DirectoryOrbits({ directories }: DirectoryOrbitsProps) {
+export function DirectoryOrbits({ directories, isModalOpen = false }: DirectoryOrbitsProps) {
   const dirList = useMemo(() => Array.from(directories.values()), [directories]);
 
   return (
@@ -36,24 +37,27 @@ export function DirectoryOrbits({ directories }: DirectoryOrbitsProps) {
               <meshBasicMaterial color={dir.color} transparent opacity={0.7} />
             </mesh>
 
-            {/* Floating label */}
-            <Html
-              position={[0, 3.5, 0]}
-              center
-              distanceFactor={80}
-              className="pointer-events-none select-none"
-            >
-              <div
-                className="px-2 py-0.5 rounded text-[11px] font-mono tracking-wider font-semibold border backdrop-blur-sm"
-                style={{
-                  color: dir.color,
-                  borderColor: `${dir.color}40`,
-                  backgroundColor: 'rgba(11, 15, 25, 0.75)',
-                }}
+            {/* Floating label — locked to zIndexRange 0 and hidden when modals are open */}
+            {!isModalOpen && (
+              <Html
+                position={[0, 3.5, 0]}
+                center
+                distanceFactor={80}
+                zIndexRange={[0, 0]}
+                className="pointer-events-none select-none"
               >
-                {dir.name}/
-              </div>
-            </Html>
+                <div
+                  className="px-2 py-0.5 rounded text-[11px] font-mono tracking-wider font-semibold border backdrop-blur-sm"
+                  style={{
+                    color: dir.color,
+                    borderColor: `${dir.color}40`,
+                    backgroundColor: 'rgba(11, 15, 25, 0.75)',
+                  }}
+                >
+                  {dir.name}/
+                </div>
+              </Html>
+            )}
           </group>
         );
       })}

@@ -2,7 +2,11 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export function GalacticCore() {
+interface GalacticCoreProps {
+  onCoreClick?: () => void;
+}
+
+export function GalacticCore({ onCoreClick }: GalacticCoreProps) {
   const coreRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
   const outerRingRef = useRef<THREE.Mesh>(null);
@@ -21,14 +25,27 @@ export function GalacticCore() {
   });
 
   return (
-    <group position={[0, 0, 0]}>
+    <group
+      position={[0, 0, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        onCoreClick?.();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+      }}
+    >
       {/* Central glowing core / black hole event horizon */}
       <mesh ref={coreRef}>
-        <sphereGeometry args={[4.5, 32, 32]} />
+        <sphereGeometry args={[4.8, 32, 32]} />
         <meshStandardMaterial
           color="#030712"
           emissive="#00f0ff"
-          emissiveIntensity={1.8}
+          emissiveIntensity={2.0}
           roughness={0.2}
           metalness={0.8}
         />

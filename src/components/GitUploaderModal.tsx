@@ -98,7 +98,7 @@ export function GitUploaderModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <div className="bg-galaxy-900 border border-cyan-500/40 rounded-2xl w-full max-w-2xl p-6 shadow-[0_0_50px_rgba(0,240,255,0.2)] text-gray-200 animate-fade-in flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-gray-800">

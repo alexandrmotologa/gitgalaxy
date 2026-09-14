@@ -7,12 +7,22 @@ import { BranchTrajectory } from '../engine/types';
 interface BranchBeltsProps {
   branches: BranchTrajectory[];
   activeBranch?: string;
+  selectedBranch?: string | null;
   isMergeActive?: boolean;
   visible?: boolean;
+  isModalOpen?: boolean;
   onBranchClick?: (branchName: string) => void;
 }
 
-export function BranchBelts({ branches, activeBranch, isMergeActive, visible = true, onBranchClick }: BranchBeltsProps) {
+export function BranchBelts({
+  branches,
+  activeBranch,
+  selectedBranch = null,
+  isMergeActive,
+  visible = true,
+  isModalOpen = false,
+  onBranchClick,
+}: BranchBeltsProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
@@ -27,7 +37,9 @@ export function BranchBelts({ branches, activeBranch, isMergeActive, visible = t
   return (
     <group ref={groupRef}>
       {branches.map((branch) => {
-        const isActive = activeBranch === branch.name;
+        const isCommitActive = activeBranch === branch.name;
+        const isSelected = selectedBranch === branch.name;
+        const isHighlighted = isCommitActive || isSelected;
         const color = new THREE.Color(branch.color);
 
         return (
@@ -37,11 +49,11 @@ export function BranchBelts({ branches, activeBranch, isMergeActive, visible = t
           >
             {/* Luminous orbital ring */}
             <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[branch.radius, isActive ? 0.35 : 0.18, 16, 120]} />
+              <torusGeometry args={[branch.radius, isHighlighted ? 0.42 : 0.18, 16, 120]} />
               <meshBasicMaterial
                 color={color}
                 transparent
-                opacity={isActive ? 0.85 : 0.3}
+                opacity={isSelected ? 0.95 : isCommitActive ? 0.85 : 0.35}
                 blending={THREE.AdditiveBlending}
               />
             </mesh>
@@ -51,40 +63,47 @@ export function BranchBelts({ branches, activeBranch, isMergeActive, visible = t
               <ringGeometry args={[branch.radius - 0.5, branch.radius + 0.5, 64]} />
               <pointsMaterial
                 color={color}
-                size={isActive ? 1.5 : 0.8}
+                size={isHighlighted ? 2.0 : 0.8}
                 transparent
-                opacity={isActive ? 0.9 : 0.35}
+                opacity={isHighlighted ? 0.95 : 0.35}
                 blending={THREE.AdditiveBlending}
               />
             </points>
 
-            {/* 3D Floating Branch Label — zIndexRange keeps it behind modals (z-50) */}
-            <Html
-              position={[branch.radius, 0.5, 0]}
-              center
-              distanceFactor={80}
-              zIndexRange={[0, 0]}
-              className="select-none"
-            >
-              <div
-                onClick={() => onBranchClick?.(branch.name)}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap transition-all duration-300 backdrop-blur-md flex items-center gap-1.5 cursor-pointer hover:scale-110 ${
-                  isActive
-                    ? 'bg-cyan-950/90 border border-cyan-400 text-white shadow-[0_0_12px_rgba(0,240,255,0.6)] scale-110'
-                    : 'bg-black/60 border border-gray-700/60 text-gray-400 opacity-70 hover:border-cyan-500/50 hover:text-gray-200'
-                }`}
+            {/* 3D Floating Branch Label — hidden when modal is open and locked to zIndexRange 0 */}
+            {!isModalOpen && (
+              <Html
+                position={[branch.radius, 0.5, 0]}
+                center
+                distanceFactor={80}
+                zIndexRange={[0, 0]}
+                className="select-none"
               >
-                <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ backgroundColor: branch.color }}
-                />
-                <span className="font-semibold">{branch.name}</span>
-                <span className="text-[9px] text-gray-500">({branch.commitCount})</span>
-              </div>
-            </Html>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onBranchClick?.(branch.name);
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-mono whitespace-nowrap transition-all duration-300 backdrop-blur-md flex items-center gap-1.5 cursor-pointer hover:scale-110 ${
+                    isSelected
+                      ? 'bg-cyan-900/95 border-2 border-cyan-300 text-white shadow-[0_0_18px_rgba(0,240,255,0.8)] scale-115 ring-2 ring-cyan-400/40'
+                      : isCommitActive
+                      ? 'bg-cyan-950/90 border border-cyan-400 text-white shadow-[0_0_12px_rgba(0,240,255,0.6)] scale-110'
+                      : 'bg-black/70 border border-gray-700/60 text-gray-300 opacity-80 hover:border-cyan-500/50 hover:text-white hover:opacity-100'
+                  }`}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full shadow-[0_0_6px_currentColor]"
+                    style={{ backgroundColor: branch.color }}
+                  />
+                  <span className="font-bold">{branch.name}</span>
+                  <span className="text-[9px] text-gray-400 font-normal">({branch.commitCount})</span>
+                </div>
+              </Html>
+            )}
 
             {/* Merge Synthesis Arc to Core */}
-            {isMergeActive && isActive && branch.name !== 'main' && (
+            {isMergeActive && isCommitActive && branch.name !== 'main' && (
               <mesh rotation={[Math.PI / 2, 0, 0]}>
                 <torusGeometry args={[branch.radius * 0.5, 0.6, 16, 60, Math.PI]} />
                 <meshBasicMaterial

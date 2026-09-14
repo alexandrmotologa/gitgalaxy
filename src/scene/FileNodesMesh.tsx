@@ -12,7 +12,10 @@ interface FileNodesMeshProps {
   authorFilter?: string | null;
   extensionFilter?: string | null;
   searchQuery?: string;
+  selectedBranchFiles?: Set<string>;
+  selectedBranchColor?: string;
   activeCommitFiles?: Set<string>;
+  isModalOpen?: boolean;
   onSelectFile: (fileId: string) => void;
   onHoverFile: (fileId: string | null, position?: [number, number, number]) => void;
 }
@@ -27,7 +30,10 @@ export function FileNodesMesh({
   authorFilter = null,
   extensionFilter = null,
   searchQuery = '',
+  selectedBranchFiles,
+  selectedBranchColor,
   activeCommitFiles,
+  isModalOpen = false,
   onSelectFile,
   onHoverFile,
 }: FileNodesMeshProps) {
@@ -41,12 +47,14 @@ export function FileNodesMesh({
   // Sphere geometry for planet nodes
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
 
+  const hasBranchFilter = selectedBranchFiles !== undefined && selectedBranchFiles.size > 0;
+
   // Update instance matrices and initial colors
   useEffect(() => {
     if (!meshRef.current) return;
 
     const q = searchQuery.toLowerCase().trim();
-    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
+    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q || hasBranchFilter);
 
     fileArray.forEach((file, idx) => {
       const [x, y, z] = file.position;
@@ -63,12 +71,16 @@ export function FileNodesMesh({
           !authorFilter ||
           (file.authors ? file.authors.includes(authorFilter) : file.topAuthor === authorFilter);
         const matchesExt = !extensionFilter || file.extension === extensionFilter;
-        const isMatch = matchesSearch && matchesAuthor && matchesExt;
+        const matchesBranch = !hasBranchFilter || selectedBranchFiles!.has(file.path);
+        const isMatch = matchesSearch && matchesAuthor && matchesExt && matchesBranch;
 
         if (isMatch) {
           s *= 1.6; // Enlarge matching nodes prominently
+        } else if (hasBranchFilter && !authorFilter && !extensionFilter && !q) {
+          // In branch view, keep non-branch files visible with gentle scaling
+          s *= 0.65;
         } else {
-          s *= 0.15; // Shrink non-matching nodes into tiny background motes
+          s *= 0.2; // Dim non-matching nodes
         }
       }
 
@@ -78,7 +90,12 @@ export function FileNodesMesh({
     });
 
     meshRef.current.instanceMatrix.needsUpdate = true;
-  }, [fileArray, isHotspotMode, authorFilter, extensionFilter, searchQuery]);
+    // CRITICAL: Compute bounding sphere so Three.js raycasting intersects all planetary nodes
+    meshRef.current.computeBoundingSphere();
+    if (meshRef.current.geometry) {
+      meshRef.current.geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 10000);
+    }
+  }, [fileArray, isHotspotMode, authorFilter, extensionFilter, searchQuery, hasBranchFilter, selectedBranchFiles]);
 
   // Real-time frame loop updating colors
   useFrame((state) => {
@@ -87,7 +104,7 @@ export function FileNodesMesh({
     let needsColorUpdate = false;
     const time = state.clock.elapsedTime;
     const q = searchQuery.toLowerCase().trim();
-    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
+    const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q || hasBranchFilter);
 
     fileArray.forEach((file, idx) => {
       const isSelected = file.id === selectedFileId;
@@ -96,7 +113,8 @@ export function FileNodesMesh({
         !authorFilter ||
         (file.authors ? file.authors.includes(authorFilter) : file.topAuthor === authorFilter);
       const isExtMatch = !extensionFilter || file.extension === extensionFilter;
-      const isMatch = (!q || isSearchMatch) && isAuthorMatch && isExtMatch;
+      const isBranchMatch = !hasBranchFilter || selectedBranchFiles!.has(file.path);
+      const isMatch = (!q || isSearchMatch) && isAuthorMatch && isExtMatch && isBranchMatch;
 
       let [r, g, b] = getHeatColorRgb(file.heat);
 
@@ -108,6 +126,12 @@ export function FileNodesMesh({
         r = Math.min(1, 0.9 * flash);
         g = Math.min(1, 1.0 * flash);
         b = Math.min(1, 0.4 * flash);
+      } else if (hasBranchFilter && isBranchMatch && selectedBranchColor) {
+        const branchCol = new THREE.Color(selectedBranchColor);
+        const pulse = 0.85 + Math.sin(time * 3 + idx) * 0.15;
+        r = branchCol.r * pulse;
+        g = branchCol.g * pulse;
+        b = branchCol.b * pulse;
       } else if (isHotspotMode) {
         if (file.heat < 0.25) {
           // Dim non-hotspots in X-Ray mode
@@ -122,30 +146,30 @@ export function FileNodesMesh({
           b = Math.min(1, b * pulse);
         }
       } else if (isAnyFilterActive) {
-        if (!isMatch) {
-          // Drastically dim filtered-out nodes
-          r = 0.04;
-          g = 0.05;
-          b = 0.08;
+        if (isMatch) {
+          // Bright vivid glow on matching nodes
+          const pulse = 1 + Math.sin(time * 4 + idx) * 0.2;
+          r = Math.min(1, r * 1.3 * pulse);
+          g = Math.min(1, g * 1.3 * pulse);
+          b = Math.min(1, b * 1.3 * pulse);
+        } else if (hasBranchFilter && !authorFilter && !extensionFilter && !q) {
+          // In branch view, keep non-branch nodes visible with subtle dimming
+          r *= 0.4;
+          g *= 0.4;
+          b *= 0.4;
         } else {
-          // Vibrate and intensify matching nodes
-          const pulse = 1 + Math.sin(time * 6 + idx) * 0.3;
-          r = Math.min(1, (r + 0.2) * pulse);
-          g = Math.min(1, (g + 0.2) * pulse);
-          b = Math.min(1, (b + 0.3) * pulse);
+          // Dim non-matching nodes
+          r *= 0.08;
+          g *= 0.08;
+          b *= 0.08;
         }
-      } else if (isSearchMatch) {
-        // Highlight search matches
-        const pulse = 0.5 + Math.sin(time * 8) * 0.5;
-        r = Math.min(1, 0.2 + pulse * 0.8);
-        g = Math.min(1, 0.9 + pulse * 0.1);
-        b = 1;
-      } else if (isSelected) {
-        // Selected node pulse
-        const pulse = 0.5 + Math.sin(time * 6) * 0.5;
-        r = Math.min(1, r + pulse * 0.4);
-        g = Math.min(1, g + pulse * 0.4);
-        b = Math.min(1, b + pulse * 0.4);
+      }
+
+      if (isSelected) {
+        // Pure blinding white for selected node
+        r = 1.0;
+        g = 1.0;
+        b = 1.0;
       }
 
       tempColor.setRGB(r, g, b);
@@ -166,8 +190,17 @@ export function FileNodesMesh({
     }
   };
 
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.instanceId !== undefined && e.instanceId < indexToFileId.length) {
+      const fileId = indexToFileId[e.instanceId];
+      onSelectFile(fileId);
+    }
+  };
+
   const handlePointerOver = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
+    document.body.style.cursor = 'pointer';
     if (e.instanceId !== undefined && e.instanceId < indexToFileId.length) {
       const fileId = indexToFileId[e.instanceId];
       const file = files.get(fileId);
@@ -178,18 +211,20 @@ export function FileNodesMesh({
   };
 
   const handlePointerOut = () => {
+    document.body.style.cursor = 'auto';
     onHoverFile(null);
   };
 
   const selectedNode = selectedFileId ? files.get(selectedFileId) : null;
   const q = searchQuery.toLowerCase().trim();
-  const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q);
+  const isAnyFilterActive = Boolean(authorFilter || extensionFilter || q || hasBranchFilter);
 
   return (
     <group>
       <instancedMesh
         ref={meshRef}
         args={[geometry, undefined, count]}
+        onClick={handleClick}
         onPointerDown={handlePointerDown}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
@@ -198,7 +233,7 @@ export function FileNodesMesh({
           roughness={0.25}
           metalness={0.75}
           emissive="#00f0ff"
-          emissiveIntensity={isAnyFilterActive ? 0.08 : isHotspotMode ? 0.6 : 0.35}
+          emissiveIntensity={isAnyFilterActive ? 0.12 : isHotspotMode ? 0.6 : 0.35}
         />
       </instancedMesh>
 
@@ -222,7 +257,8 @@ export function FileNodesMesh({
               !authorFilter ||
               (f.authors ? f.authors.includes(authorFilter) : f.topAuthor === authorFilter);
             const matchesExt = !extensionFilter || f.extension === extensionFilter;
-            return matchesSearch && matchesAuthor && matchesExt;
+            const matchesBranch = !hasBranchFilter || selectedBranchFiles!.has(f.path);
+            return matchesSearch && matchesAuthor && matchesExt && matchesBranch;
           })
           .slice(0, 35)
           .map((f) => (
@@ -230,7 +266,7 @@ export function FileNodesMesh({
               <mesh rotation={[Math.PI / 2, 0, 0]}>
                 <ringGeometry args={[f.size * 1.7, f.size * 2.1, 32]} />
                 <meshBasicMaterial
-                  color="#38bdf8"
+                  color={selectedBranchColor || '#38bdf8'}
                   side={THREE.DoubleSide}
                   transparent
                   opacity={0.9}
@@ -257,8 +293,8 @@ export function FileNodesMesh({
             </group>
           ))}
 
-      {/* Floating file name labels for active commit files (Feature 5) */}
-      {activeCommitFiles && activeCommitFiles.size > 0 &&
+      {/* Floating file name labels for active commit files (hidden if modal is open) */}
+      {!isModalOpen && activeCommitFiles && activeCommitFiles.size > 0 &&
         fileArray
           .filter((f) => activeCommitFiles.has(f.path))
           .slice(0, 12)

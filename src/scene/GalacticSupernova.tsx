@@ -6,9 +6,10 @@ import { SupernovaEvent } from '../engine/types';
 
 interface GalacticSupernovaProps {
   events: SupernovaEvent[];
+  isModalOpen?: boolean;
 }
 
-export function GalacticSupernova({ events }: GalacticSupernovaProps) {
+export function GalacticSupernova({ events, isModalOpen = false }: GalacticSupernovaProps) {
   const groupRef = useRef<THREE.Group>(null);
 
   useFrame(() => {
@@ -67,12 +68,13 @@ export function GalacticSupernova({ events }: GalacticSupernovaProps) {
               />
             </mesh>
 
-            {/* Optional Floating 3D Milestone Label */}
-            {event.label && elapsed < 0.85 && (
+            {/* Optional Floating 3D Milestone Label — locked to zIndexRange 0 and hidden if modal is open */}
+            {!isModalOpen && event.label && elapsed < 0.85 && (
               <Html
                 position={[0, currentRadius * 0.4 + 10, 0]}
                 center
                 distanceFactor={100}
+                zIndexRange={[0, 0]}
                 className="pointer-events-none select-none"
               >
                 <div className="bg-gradient-to-r from-cyan-500/90 to-purple-600/90 text-white font-mono text-xs font-black tracking-widest px-3.5 py-1.5 rounded-full border border-white/40 shadow-[0_0_25px_rgba(0,240,255,0.8)] uppercase whitespace-nowrap animate-bounce">

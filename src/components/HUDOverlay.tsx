@@ -29,6 +29,7 @@ interface HUDOverlayProps {
   searchQuery: string;
   selectedAuthorFilter: string | null;
   selectedExtensionFilter: string | null;
+  selectedBranch?: string | null;
   availableExtensions: string[];
   isHotspotMode: boolean;
   isCinematicMode: boolean;
@@ -37,6 +38,7 @@ interface HUDOverlayProps {
   onSearchChange: (query: string) => void;
   onAuthorFilterChange: (author: string | null) => void;
   onExtensionFilterChange: (ext: string | null) => void;
+  onClearBranchFilter?: () => void;
   onSelectFile: (fileId: string) => void;
   onToggleHotspotMode: () => void;
   onToggleCinematicMode: () => void;
@@ -55,6 +57,7 @@ export function HUDOverlay({
   searchQuery,
   selectedAuthorFilter,
   selectedExtensionFilter,
+  selectedBranch,
   availableExtensions,
   isHotspotMode,
   isCinematicMode,
@@ -63,6 +66,7 @@ export function HUDOverlay({
   onSearchChange,
   onAuthorFilterChange,
   onExtensionFilterChange,
+  onClearBranchFilter,
   onSelectFile,
   onToggleHotspotMode,
   onToggleCinematicMode,
@@ -201,10 +205,12 @@ export function HUDOverlay({
             searchQuery={searchQuery}
             selectedAuthorFilter={selectedAuthorFilter}
             selectedExtensionFilter={selectedExtensionFilter}
+            selectedBranch={selectedBranch}
             availableExtensions={availableExtensions}
             onSearchChange={onSearchChange}
             onAuthorFilterChange={onAuthorFilterChange}
             onExtensionFilterChange={onExtensionFilterChange}
+            onClearBranchFilter={onClearBranchFilter}
             onSelectFile={onSelectFile}
           />
         </div>
@@ -253,14 +259,24 @@ export function HUDOverlay({
           {/* Code Constellation Lines Toggle */}
           <button
             onClick={onToggleConstellations}
-            className={`p-2 rounded-xl transition-all border ${
+            className={`px-3 py-1.5 rounded-xl transition-all border flex items-center gap-1.5 ${
               isConstellationsVisible
-                ? 'text-cyan-400 bg-cyan-950/60 border-cyan-500/50 shadow-[0_0_12px_rgba(0,240,255,0.3)]'
-                : 'text-gray-500 hover:text-gray-300 border-transparent hover:bg-gray-800'
+                ? 'text-cyan-300 bg-cyan-950/80 border-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.4)] scale-105'
+                : 'text-gray-400 hover:text-gray-200 border-gray-800 hover:bg-gray-800/80'
             }`}
-            title="Code Constellations: Toggle celestial web lines between sibling files in directories"
+            title="Code Constellations [Shortcut: C]: Toggle celestial web lines between sibling files in directories"
           >
-            <Share2 size={16} />
+            <Share2 size={15} className={isConstellationsVisible ? 'text-cyan-400 animate-pulse' : 'text-gray-500'} />
+            <span className="text-xs font-mono font-semibold hidden md:inline">Constellations</span>
+            <span
+              className={`text-[9px] font-mono px-1.5 py-0.5 rounded uppercase font-bold ${
+                isConstellationsVisible
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40'
+                  : 'bg-gray-800 text-gray-400'
+              }`}
+            >
+              {isConstellationsVisible ? 'ON' : 'OFF'}
+            </span>
           </button>
 
           {/* Hotspot Debt Radar Toggle */}

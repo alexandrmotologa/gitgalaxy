@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { RepositoryData, FileNode, GitCommit } from '../engine/types';
+import { RepositoryData, FileNode, GitCommit, GitAuthor } from '../engine/types';
 import { parseGitLog, extractUniqueBranches } from '../engine/gitLogParser';
 import { buildGalaxyLayout } from '../engine/galaxyLayout';
 
@@ -15,6 +15,8 @@ export function useGalaxyState() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAuthorFilter, setSelectedAuthorFilter] = useState<string | null>(null);
   const [selectedExtensionFilter, setSelectedExtensionFilter] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [selectedAuthor, setSelectedAuthor] = useState<GitAuthor | null>(null);
   const [isHotspotMode, setIsHotspotMode] = useState(false);
   const [isCinematicMode, setIsCinematicMode] = useState(false);
 
@@ -214,6 +216,40 @@ export function useGalaxyState() {
     return extractUniqueBranches(repository.commits);
   }, [repository]);
 
+  const selectBranch = useCallback(
+    (branchName: string | null) => {
+      setSelectedBranch(branchName);
+      if (!repository || !branchName) return;
+      const b = branches.find((br) => br.name === branchName);
+      if (b) {
+        setFocusTarget([b.radius * 0.7, b.radius * 0.3, b.radius * 0.7]);
+      }
+    },
+    [repository, branches]
+  );
+
+  const selectAuthor = useCallback((author: GitAuthor | null) => {
+    setSelectedAuthor(author);
+  }, []);
+
+  // Files modified by commits on the selected branch
+  const selectedBranchFiles = useMemo(() => {
+    if (!repository || !selectedBranch) return undefined;
+    const fileSet = new Set<string>();
+    repository.commits.forEach((c) => {
+      if ((c.branch || 'main') === selectedBranch) {
+        c.diffs.forEach((d) => fileSet.add(d.path));
+      }
+    });
+    return fileSet;
+  }, [repository, selectedBranch]);
+
+  const selectedBranchColor = useMemo(() => {
+    if (!selectedBranch) return undefined;
+    const b = branches.find((br) => br.name === selectedBranch);
+    return b ? b.color : '#00f0ff';
+  }, [selectedBranch, branches]);
+
   return {
     repository,
     isLoading,
@@ -224,6 +260,10 @@ export function useGalaxyState() {
     searchQuery,
     selectedAuthorFilter,
     selectedExtensionFilter,
+    selectedBranch,
+    selectedAuthor,
+    selectedBranchFiles,
+    selectedBranchColor,
     isHotspotMode,
     isCinematicMode,
     isConstellationsVisible,
@@ -238,6 +278,8 @@ export function useGalaxyState() {
     setIsGuideOpen,
     selectFile,
     closeFileDetails,
+    selectBranch,
+    selectAuthor,
     setHoveredFileId,
     setFocusTarget,
     resetCamera,

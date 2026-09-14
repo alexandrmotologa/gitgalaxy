@@ -8,10 +8,12 @@ interface SearchBar3DProps {
   searchQuery: string;
   selectedAuthorFilter: string | null;
   selectedExtensionFilter: string | null;
+  selectedBranch?: string | null;
   availableExtensions: string[];
   onSearchChange: (query: string) => void;
   onAuthorFilterChange: (author: string | null) => void;
   onExtensionFilterChange: (ext: string | null) => void;
+  onClearBranchFilter?: () => void;
   onSelectFile: (fileId: string) => void;
 }
 
@@ -20,10 +22,12 @@ export function SearchBar3D({
   searchQuery,
   selectedAuthorFilter,
   selectedExtensionFilter,
+  selectedBranch,
   availableExtensions,
   onSearchChange,
   onAuthorFilterChange,
   onExtensionFilterChange,
+  onClearBranchFilter,
   onSelectFile,
 }: SearchBar3DProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -130,8 +134,21 @@ export function SearchBar3D({
       </div>
 
       {/* Active Filter Badges */}
-      {(selectedAuthorFilter || selectedExtensionFilter) && (
+      {(selectedAuthorFilter || selectedExtensionFilter || selectedBranch) && (
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+          {selectedBranch && (
+            <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-cyan-950/90 border border-cyan-400 text-white shadow-[0_0_12px_rgba(0,240,255,0.4)] animate-fade-in">
+              <span>Branch: {selectedBranch}</span>
+              <button
+                onClick={onClearBranchFilter}
+                className="hover:text-white ml-0.5 p-0.5 rounded hover:bg-cyan-900/60"
+                title="Clear branch filter"
+              >
+                <X size={10} />
+              </button>
+            </div>
+          )}
+
           {selectedAuthorFilter && (
             <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-cyan-950/90 border border-cyan-500/60 text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.3)] animate-fade-in">
               <span>Author: {selectedAuthorFilter}</span>
@@ -162,6 +179,7 @@ export function SearchBar3D({
             onClick={() => {
               onAuthorFilterChange(null);
               onExtensionFilterChange(null);
+              onClearBranchFilter?.();
             }}
             className="text-[10px] font-mono text-gray-400 hover:text-rose-400 px-1 py-0.5 rounded transition-colors"
           >

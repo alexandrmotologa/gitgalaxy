@@ -1,10 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useGalaxyState } from './hooks/useGalaxyState';
 import { useGitPlayback } from './hooks/useGitPlayback';
 import { GalaxyCanvas } from './scene/GalaxyCanvas';
 import { HUDOverlay } from './components/HUDOverlay';
 import { TimelineScrubber } from './components/TimelineScrubber';
 import { FileDetailDrawer } from './components/FileDetailDrawer';
+import { AuthorDetailDrawer } from './components/AuthorDetailDrawer';
+import { BranchDetailDrawer } from './components/BranchDetailDrawer';
 import { ChurnLegend } from './components/ChurnLegend';
 import { GitUploaderModal } from './components/GitUploaderModal';
 import { HotspotLeaderboard } from './components/HotspotLeaderboard';
@@ -24,6 +26,10 @@ export function App() {
     searchQuery,
     selectedAuthorFilter,
     selectedExtensionFilter,
+    selectedBranch,
+    selectedAuthor,
+    selectedBranchFiles,
+    selectedBranchColor,
     isHotspotMode,
     isCinematicMode,
     isConstellationsVisible,
@@ -38,7 +44,10 @@ export function App() {
     setIsGuideOpen,
     selectFile,
     closeFileDetails,
+    selectBranch,
+    selectAuthor,
     setHoveredFileId,
+    setFocusTarget,
     resetCamera,
     setSearchQuery,
     setSelectedAuthorFilter,
@@ -84,13 +93,77 @@ export function App() {
     altitude: 0,
   });
 
-  // Clicking a branch label auto-filters by that branch name (searching commits)
-  const handleBranchClick = useCallback((branchName: string) => {
-    setSearchQuery(branchName);
-  }, [setSearchQuery]);
+  // Global Keyboard Shortcuts (C = Constellations, H = Hotspots, P = Pilot, Space = Play/Pause)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        toggleConstellations();
+      } else if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleHotspotMode();
+      } else if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        togglePilotMode();
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'Escape') {
+        if (isGuideOpen) setIsGuideOpen(false);
+        if (isCommitModalOpen) closeCommitModal();
+        if (isUploaderOpen) setIsUploaderOpen(false);
+        if (selectedAuthor) selectAuthor(null);
+        if (selectedBranch) selectBranch(null);
+        if (selectedFileId) closeFileDetails();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    toggleConstellations,
+    toggleHotspotMode,
+    togglePilotMode,
+    togglePlay,
+    isGuideOpen,
+    isCommitModalOpen,
+    isUploaderOpen,
+    selectedAuthor,
+    selectedBranch,
+    selectedFileId,
+    setIsGuideOpen,
+    closeCommitModal,
+    setIsUploaderOpen,
+    selectAuthor,
+    selectBranch,
+    closeFileDetails,
+  ]);
+
+  // Clicking a branch label focuses that branch orbit & highlights its changes without hiding galaxy
+  const handleBranchClick = useCallback(
+    (branchName: string) => {
+      selectBranch(selectedBranch === branchName ? null : branchName);
+    },
+    [selectBranch, selectedBranch]
+  );
 
   const selectedFile = selectedFileId && repository ? repository.files.get(selectedFileId) || null : null;
   const hoveredFile = hoveredFileId && repository ? repository.files.get(hoveredFileId) || null : null;
+
+  // Determine if any modal/drawer is open to conceal 3D HTML overlays
+  const isAnyModalOpen = Boolean(
+    isGuideOpen ||
+    isCommitModalOpen ||
+    isUploaderOpen ||
+    selectedFileId ||
+    selectedAuthor ||
+    selectedBranch
+  );
+
+  const activeBranchData = selectedBranch ? branches.find((b) => b.name === selectedBranch) || null : null;
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-galaxy-950 font-sans">
@@ -105,11 +178,15 @@ export function App() {
           shockwaves={shockwaves}
           supernovas={supernovas}
           branches={branches}
+          selectedBranch={selectedBranch}
+          selectedBranchFiles={selectedBranchFiles}
+          selectedBranchColor={selectedBranchColor}
           isMergeActive={isMergeActive}
           isHotspotMode={isHotspotMode}
           isCinematicMode={isCinematicMode}
           isConstellationsVisible={isConstellationsVisible}
           isPilotMode={isPilotMode}
+          isModalOpen={isAnyModalOpen}
           authorFilter={selectedAuthorFilter}
           extensionFilter={selectedExtensionFilter}
           searchQuery={searchQuery}
@@ -118,6 +195,8 @@ export function App() {
           onHoverFile={(fileId) => setHoveredFileId(fileId)}
           onFlightTelemetryUpdate={setFlightTelemetry}
           onBranchClick={handleBranchClick}
+          onSelectAuthor={(author) => selectAuthor(author)}
+          onCoreClick={() => currentCommit && openCommitModal(currentCommit)}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-galaxy-950 text-cyan-400 font-mono text-sm">
@@ -133,6 +212,7 @@ export function App() {
         searchQuery={searchQuery}
         selectedAuthorFilter={selectedAuthorFilter}
         selectedExtensionFilter={selectedExtensionFilter}
+        selectedBranch={selectedBranch}
         availableExtensions={availableExtensions}
         isHotspotMode={isHotspotMode}
         isCinematicMode={isCinematicMode}
@@ -141,6 +221,7 @@ export function App() {
         onSearchChange={setSearchQuery}
         onAuthorFilterChange={setSelectedAuthorFilter}
         onExtensionFilterChange={setSelectedExtensionFilter}
+        onClearBranchFilter={() => selectBranch(null)}
         onSelectFile={selectFile}
         onToggleHotspotMode={toggleHotspotMode}
         onToggleCinematicMode={toggleCinematicMode}
@@ -168,10 +249,11 @@ export function App() {
         onClose={toggleHotspotMode}
       />
 
-      {/* Commit Message Banner — animated overlay during playback */}
+      {/* Commit Message Banner — animated interactive overlay during playback */}
       <CommitMessageBanner
         commit={currentCommit}
         isPlaying={isPlaying}
+        onInspectCommit={openCommitModal}
       />
 
       {/* Bottom Controls Area */}
@@ -207,6 +289,28 @@ export function App() {
         commits={repository?.commits || []}
         onClose={closeFileDetails}
         onFocusNode={() => selectFile(selectedFileId!)}
+      />
+
+      {/* Selected Author Profile Drawer */}
+      <AuthorDetailDrawer
+        author={selectedAuthor}
+        repository={repository}
+        onClose={() => selectAuthor(null)}
+        onFocusBeacon={(pos) => setFocusTarget(pos)}
+        onFilterAuthor={(name) => {
+          setSelectedAuthorFilter(name);
+          selectAuthor(null);
+        }}
+        onInspectCommit={openCommitModal}
+      />
+
+      {/* Selected Branch Details Drawer */}
+      <BranchDetailDrawer
+        branch={activeBranchData}
+        repository={repository}
+        onClose={() => selectBranch(null)}
+        onFocusBranch={(radius) => setFocusTarget([radius * 0.7, radius * 0.3, radius * 0.7])}
+        onInspectCommit={openCommitModal}
       />
 
       {/* Commit Diff & Detail Inspection Modal */}
@@ -250,4 +354,3 @@ export function App() {
 }
 
 export default App;
-

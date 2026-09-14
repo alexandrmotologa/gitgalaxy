@@ -60,7 +60,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
         to: corePos,
         color: authorColor,
         progress: 0,
-        duration: Math.max(500, 1400 / speed),
+        duration: Math.max(1000, 2200 / speed),
         startTime: now,
         fileName: 'Trunk (HEAD)',
       });
@@ -84,7 +84,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
           to: corePos,
           color: '#38bdf8', // Cyber blue history thread
           progress: 0,
-          duration: Math.max(600, 1600 / speed),
+          duration: Math.max(1100, 2400 / speed),
           startTime: now,
           fileName: 'Commit DAG Parent',
         });
@@ -104,7 +104,7 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
             to: fileNode.position,
             color: authorColor,
             progress: 0,
-            duration: Math.max(600, 1500 / speed),
+            duration: Math.max(1100, 2300 / speed),
             startTime: now,
             fileName: fileNode.filename,
           });
@@ -199,8 +199,9 @@ export function useGitPlayback({ repository, onFilesUpdated }: UseGitPlaybackPro
           const elapsed = time - beam.startTime;
           const progress = elapsed / beam.duration;
 
-          if (progress < 1.0) {
-            remainingBeams.push({ ...beam, progress });
+          // Keep beam alive until head finishes (1.0) and tail completely dissipates (1.35)
+          if (progress < 1.35) {
+            remainingBeams.push(beam);
           }
         });
 

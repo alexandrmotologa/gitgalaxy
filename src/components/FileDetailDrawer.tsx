@@ -26,7 +26,7 @@ export function FileDetailDrawer({
   const heatColor = getHeatColorHex(file.heat);
 
   return (
-    <div className="fixed top-0 right-0 h-full w-96 bg-galaxy-900/90 backdrop-blur-xl border-l border-cyan-500/30 p-5 shadow-[-10px_0_30px_rgba(0,0,0,0.7)] flex flex-col justify-between z-40 animate-slide-left pointer-events-auto">
+    <div className="fixed top-0 right-0 h-full w-96 bg-galaxy-900/95 backdrop-blur-2xl border-l border-cyan-500/30 p-5 shadow-[-15px_0_40px_rgba(0,0,0,0.8)] flex flex-col justify-between z-[100] animate-slide-left pointer-events-auto select-none">
       <div>
         {/* Header */}
         <div className="flex items-start justify-between gap-3 pb-4 border-b border-gray-800">
