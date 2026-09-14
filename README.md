@@ -1,5 +1,10 @@
 # GitGalaxy
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://gitgalaxy-rho.vercel.app)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/alexandrmotologa/gitgalaxy)
+
+Live Demo: [https://gitgalaxy-rho.vercel.app](https://gitgalaxy-rho.vercel.app)
+
 GitGalaxy is an interactive 3D WebGL visualizer for Git repositories. It parses commit history and models repository structure as a dynamic galactic system in the browser. Folders and modules form orbital clusters, files act as celestial bodies scaled by line count, and commits fire particle beams between contributors and modified files.
 
 The application includes a heat calculation engine that highlights frequently modified files in crimson and cools inactive files to cyan over time.
